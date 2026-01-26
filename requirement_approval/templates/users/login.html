@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Requirement Approval System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .login-card {
+        background: white;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        width: 100%;
+        max-width: 400px;
+    }
+    .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    .login-header h1 {
+        color: #667eea;
+        font-size: 2rem;
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+    .login-header p {
+        color: #666;
+        font-size: 0.95rem;
+    }
+    .form-control {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .btn-login {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    .demo-users {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+    .demo-users h5 {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 12px;
+    }
+    .demo-user-btn {
+        display: block;
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 8px;
+        text-align: left;
+        font-size: 0.85rem;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        background: #f9f9f9;
+        text-decoration: none;
+        color: #333;
+        transition: all 0.3s;
+    }
+    .demo-user-btn:hover {
+        background: #f0f0f0;
+        border-color: #667eea;
+        color: #667eea;
+    }
+    .error-messages {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border: 1px solid #f5c6cb;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1><i class="bi bi-file-earmark-check"></i></h1>
+            <h1>Requirement Portal</h1>
+            <p>Internal Requirement & Approval System</p>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="error-messages">
+            {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'users:login' %}">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="id_username" class="form-label">Username</label>
+                <input type="text" name="username" id="id_username" class="form-control" placeholder="Username" autofocus>
+                {% if form.username.errors %}
+                <small class="text-danger d-block mt-2">{{ form.username.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <div class="mb-3">
+                <label for="id_password" class="form-label">Password</label>
+                <input type="password" name="password" id="id_password" class="form-control" placeholder="Password">
+                {% if form.password.errors %}
+                <small class="text-danger d-block mt-2">{{ form.password.errors.0 }}</small>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-login">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </button>
+        </form>
+
+        <!-- Demo Users Section -->
+        <div class="demo-users">
+            <h5><i class="bi bi-info-circle"></i> Demo Users (Password: demo123)</h5>
+            
+            <details class="mb-2">
+                <summary class="cursor-pointer">Finance Department (3 users)</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('finance_user1', 'demo123')">
+                        <i class="bi bi-person"></i> finance_user1
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('finance_user2', 'demo123')">
+                        <i class="bi bi-person"></i> finance_user2
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('finance_user3', 'demo123')">
+                        <i class="bi bi-person"></i> finance_user3
+                    </a>
+                </div>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer">Marketing Department (3 users)</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('marketing_user1', 'demo123')">
+                        <i class="bi bi-person"></i> marketing_user1
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('marketing_user2', 'demo123')">
+                        <i class="bi bi-person"></i> marketing_user2
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('marketing_user3', 'demo123')">
+                        <i class="bi bi-person"></i> marketing_user3
+                    </a>
+                </div>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer">Sales Department (3 users)</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('sales_user1', 'demo123')">
+                        <i class="bi bi-person"></i> sales_user1
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('sales_user2', 'demo123')">
+                        <i class="bi bi-person"></i> sales_user2
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('sales_user3', 'demo123')">
+                        <i class="bi bi-person"></i> sales_user3
+                    </a>
+                </div>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer">Technical Department (3 users)</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('technical_user1', 'demo123')">
+                        <i class="bi bi-person"></i> technical_user1
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('technical_user2', 'demo123')">
+                        <i class="bi bi-person"></i> technical_user2
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('technical_user3', 'demo123')">
+                        <i class="bi bi-person"></i> technical_user3
+                    </a>
+                </div>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer">Department Heads</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('finance_head', 'demo123')">
+                        <i class="bi bi-crown"></i> finance_head
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('marketing_head', 'demo123')">
+                        <i class="bi bi-crown"></i> marketing_head
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('sales_head', 'demo123')">
+                        <i class="bi bi-crown"></i> sales_head
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('technical_head', 'demo123')">
+                        <i class="bi bi-crown"></i> technical_head
+                    </a>
+                </div>
+            </details>
+
+            <details class="mb-2">
+                <summary class="cursor-pointer">Executives</summary>
+                <div style="margin-top: 8px;">
+                    <a class="demo-user-btn" onclick="fillLogin('admin', 'demo123')">
+                        <i class="bi bi-gear"></i> admin
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('cfo', 'demo123')">
+                        <i class="bi bi-briefcase"></i> cfo
+                    </a>
+                    <a class="demo-user-btn" onclick="fillLogin('ceo', 'demo123')">
+                        <i class="bi bi-building"></i> ceo
+                    </a>
+                </div>
+            </details>
+        </div>
+    </div>
+</div>
+
+<script>
+function fillLogin(username, password) {
+    document.getElementById('id_username').value = username;
+    document.getElementById('id_password').value = password;
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

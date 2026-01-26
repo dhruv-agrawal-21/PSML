@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}User Management - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-people"></i> {{ page_title }}</h2>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-person-plus"></i> Add New User
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="mb-1">{{ user_stats.total_users }}</h3>
+                    <p class="text-muted mb-0">Total Users</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="mb-1 text-success">{{ user_stats.active_users }}</h3>
+                    <p class="text-muted mb-0">Active</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="text-center">
+                    <h3 class="mb-1 text-danger">{{ user_stats.inactive_users }}</h3>
+                    <p class="text-muted mb-0">Inactive</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Users by Role</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted">Department</small>
+                        <p class="mb-0"><strong>{{ user_stats.by_role.users }}</strong></p>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted">Heads</small>
+                        <p class="mb-0"><strong>{{ user_stats.by_role.heads }}</strong></p>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted">Admins</small>
+                        <p class="mb-0"><strong>{{ user_stats.by_role.admins }}</strong></p>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <small class="text-muted">Executives</small>
+                        <p class="mb-0"><strong>{{ user_stats.by_role.cfos|add:user_stats.by_role.ceos }}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Search by name, email, username..." 
+                    value="{{ search_query }}">
+            </div>
+            <div class="col-md-3">
+                <select name="role" class="form-select">
+                    <option value="">All Roles</option>
+                    {% for role_code, role_name in role_choices %}
+                    <option value="{{ role_code }}" {% if current_role == role_code %}selected{% endif %}>
+                        {{ role_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="department" class="form-select">
+                    <option value="">All Departments</option>
+                    {% for dept_code, dept_name in dept_choices %}
+                    <option value="{{ dept_code }}" {% if current_dept == dept_code %}selected{% endif %}>
+                        {{ dept_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+                <a href="{% url 'users:user_management' %}" class="btn btn-outline-secondary w-100 mt-2">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+    <div class="card-header bg-light">
+        <h6 class="mb-0"><i class="bi bi-table"></i> Users List ({{ page_obj.paginator.count }} total)</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 20%;">Name</th>
+                        <th style="width: 20%;">Email</th>
+                        <th style="width: 15%;">Role</th>
+                        <th style="width: 15%;">Department</th>
+                        <th style="width: 10%;">Status</th>
+                        <th style="width: 20%;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in all_users %}
+                    <tr>
+                        <td>
+                            <strong>{{ u.get_full_name|default:u.username }}</strong>
+                            <br>
+                            <small class="text-muted">@{{ u.username }}</small>
+                        </td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            <span class="badge bg-{% if u.role == 'user' %}info{% elif u.role == 'head' %}primary{% elif u.role == 'admin' %}warning{% else %}danger{% endif %}">
+                                {{ u.get_role_display }}
+                            </span>
+                        </td>
+                        <td>{{ u.get_department_display }}</td>
+                        <td>
+                            {% if u.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'users:user_edit' u.id %}" class="btn btn-sm btn-outline-primary" 
+                                title="Edit user details">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                onclick="toggleUserActive({{ u.id }}, '{{ u.username }}')"
+                                title="{% if u.is_active %}Deactivate{% else %}Activate{% endif %} user">
+                                <i class="bi bi-toggle-{% if u.is_active %}on{% else %}off{% endif %}"></i> 
+                                {% if u.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </button>
+                            {% if user.id != u.id %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                onclick="confirmDelete({{ u.id }}, '{{ u.username }}')"
+                                title="Delete user">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-danger" disabled 
+                                title="Cannot delete yourself">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> No users found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}{% if current_dept %}&department={{ current_dept }}{% endif %}">
+                First
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}{% if current_dept %}&department={{ current_dept }}{% endif %}">
+                Previous
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active">
+                <span class="page-link">{{ num }}</span>
+            </li>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}{% if current_dept %}&department={{ current_dept }}{% endif %}">
+                    {{ num }}
+                </a>
+            </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}{% if current_dept %}&department={{ current_dept }}{% endif %}">
+                Next
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if current_role %}&role={{ current_role }}{% endif %}{% if current_dept %}&department={{ current_dept }}{% endif %}">
+                Last
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addUserModalLabel">
+                    <i class="bi bi-person-plus"></i> Add New User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted">To add a new user, use the Django admin panel or create a custom form.</p>
+                <p class="mb-0">
+                    <a href="/admin/users/customuser/add/" class="btn btn-primary" target="_blank">
+                        <i class="bi bi-box-arrow-up-right"></i> Go to Admin Panel
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">
+                    <i class="bi bi-exclamation-triangle"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUsername"></strong>?</p>
+                <p class="text-danger mb-0"><small>This action cannot be undone!</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .btn-group-sm {
+        display: flex;
+        gap: 5px;
+    }
+    
+    .badge {
+        font-size: 0.85rem;
+    }
+</style>
+
+<script>
+    function confirmDelete(userId, username) {
+        document.getElementById('deleteUsername').textContent = username;
+        document.getElementById('deleteForm').action = `/user/${userId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+    }
+
+    function toggleUserActive(userId, username) {
+        if (confirm(`Are you sure you want to toggle active status for ${username}?`)) {
+            fetch(`/user/${userId}/toggle-active/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred');
+            });
+        }
+    }
+</script>
+
+{% endblock %}

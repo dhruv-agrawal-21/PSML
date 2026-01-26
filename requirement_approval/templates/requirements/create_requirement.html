@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Create Requirement - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-plus-circle"></i> Create New Requirement</h5>
+                <a href="{% url 'requirements:list_requirements' %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'requirements:create' %}" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_department" class="form-label">Department <span class="text-danger">*</span></label>
+                                {{ form.department }}
+                                {% if form.department.errors %}
+                                    <small class="text-danger d-block">{{ form.department.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_priority" class="form-label">Priority <span class="text-danger">*</span></label>
+                                {{ form.priority }}
+                                {% if form.priority.errors %}
+                                    <small class="text-danger d-block">{{ form.priority.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_requirement_type" class="form-label">Requirement Type <span class="text-danger">*</span></label>
+                                {{ form.requirement_type }}
+                                {% if form.requirement_type.errors %}
+                                    <small class="text-danger d-block">{{ form.requirement_type.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_item_description" class="form-label">Item Description <span class="text-danger">*</span></label>
+                        {{ form.item_description }}
+                        {% if form.item_description.errors %}
+                            <small class="text-danger d-block">{{ form.item_description.errors.0 }}</small>
+                        {% endif %}
+                        <small class="form-text text-muted">Provide a detailed description of what is being requested</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_justification" class="form-label">Justification</label>
+                        {{ form.justification }}
+                        {% if form.justification.errors %}
+                            <small class="text-danger d-block">{{ form.justification.errors.0 }}</small>
+                        {% endif %}
+                        <small class="form-text text-muted">Explain why this requirement is needed and its business benefits (Optional)</small>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_estimated_cost" class="form-label">Estimated Cost <span class="text-danger">*</span></label>
+                                {{ form.estimated_cost }}
+                                {% if form.estimated_cost.errors %}
+                                    <small class="text-danger d-block">{{ form.estimated_cost.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_quantity" class="form-label">Quantity</label>
+                                {{ form.quantity }}
+                                {% if form.quantity.errors %}
+                                    <small class="text-danger d-block">{{ form.quantity.errors.0 }}</small>
+                                {% endif %}
+                                <small class="form-text text-muted">(Optional)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_quotation_deadline" class="form-label">Quotation Deadline <span class="text-danger">*</span></label>
+                                {{ form.quotation_deadline }}
+                                {% if form.quotation_deadline.errors %}
+                                    <small class="text-danger d-block">{{ form.quotation_deadline.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="id_duration" class="form-label">Duration</label>
+                                {{ form.duration }}
+                                {% if form.duration.errors %}
+                                    <small class="text-danger d-block">{{ form.duration.errors.0 }}</small>
+                                {% endif %}
+                                <small class="form-text text-muted">(Optional)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_delivery_address" class="form-label">Delivery Address</label>
+                        {{ form.delivery_address }}
+                        {% if form.delivery_address.errors %}
+                            <small class="text-danger d-block">{{ form.delivery_address.errors.0 }}</small>
+                        {% endif %}
+                        <small class="form-text text-muted">(Optional)</small>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Requirement
+                        </button>
+                        <a href="{% url 'requirements:list_requirements' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .text-danger {
+        color: #dc3545;
+    }
+</style>
+{% endblock %}

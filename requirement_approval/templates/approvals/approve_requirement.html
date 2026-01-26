@@ -1,0 +1,353 @@
+{% extends "base.html" %}
+
+{% block title %}Approve Requirement - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 offset-md-1">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-check-lg"></i> Review & Approve Requirement</h2>
+            <div class="gap-2" style="display: flex; gap: 8px;">
+                <a href="{% url 'requirements:edit' requirement.id %}" class="btn btn-outline-warning" title="Edit requirement details">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                <a href="{% url 'approvals:pending_approvals' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Requirement Details -->
+            <div class="col-md-7">
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark"></i> Requirement #{{ requirement.id }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Status</p>
+                                <h6>
+                                    <span class="badge bg-warning">
+                                        Pending Review
+                                    </span>
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Priority</p>
+                                <h6>
+                                    <span
+                                        class="badge bg-{% if requirement.priority == 'critical' %}danger{% elif requirement.priority == 'high' %}warning{% elif requirement.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                                        {{ requirement.get_priority_display }}
+                                    </span>
+                                </h6>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Department</p>
+                                <h6>{{ requirement.get_department_display }}</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Requirement Type</p>
+                                <h6>{{ requirement.get_requirement_type_display }}</h6>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Requested By</p>
+                                <h6>{{ requirement.requested_by.get_full_name }}</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Requested Date</p>
+                                <h6>{{ requirement.created_date|date:"M d, Y"|default:"-" }}</h6>
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <div class="mb-3">
+                            <p class="text-muted mb-1">Item Description</p>
+                            <p class="card-text" style="white-space: pre-wrap;">{{ requirement.item_description|default:"-" }}</p>
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-muted mb-1">Justification</p>
+                            <p class="card-text" style="white-space: pre-wrap;">{{ requirement.justification|default:"-" }}</p>
+                        </div>
+
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Estimated Cost</p>
+                                <h6>{{ requirement.estimated_cost|floatformat:2|default:"-" }}</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Quantity</p>
+                                <h6>{{ requirement.quantity|default:"-" }}</h6>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Duration</p>
+                                <h6>{{ requirement.duration|default:"-" }}</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="text-muted mb-1">Delivery Address</p>
+                                <small>{{ requirement.delivery_address|default:"-" }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approval Form -->
+            <div class="col-md-5">
+                <!-- Document Upload Status -->
+                {% if needs_document %}
+                <div class="card mb-3 border-warning">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Document Upload Required</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">You must upload a signed document before you can approve this requirement.</p>
+                        <a href="{% url 'documents:upload_signed_document' approval.id %}"
+                            class="btn btn-warning btn-sm w-100">
+                            <i class="bi bi-upload"></i> Upload Signed Document
+                        </a>
+                    </div>
+                </div>
+                {% elif signed_document %}
+                <div class="card mb-3 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="bi bi-check-circle"></i> Document Uploaded</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>{{ signed_document.file_name }}</strong></p>
+                        <small class="text-muted">Uploaded: {{ signed_document.uploaded_date|date:"M d, Y H:i"
+                            }}</small>
+                        <div class="mt-2">
+                            <a href="{% url 'documents:download_document' signed_document.id %}"
+                                class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-pen"></i> Your Decision</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'approvals:approve_requirement' approval.id %}" enctype="multipart/form-data" novalidate>
+                            {% csrf_token %}
+
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Decision <span class="text-danger">*</span></label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="action" id="id_approve"
+                                            value="approved" required>
+                                        <label class="form-check-label" for="id_approve">
+                                            <i class="bi bi-check-circle text-success"></i> Approve
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="action" id="id_reject"
+                                            value="rejected" required>
+                                        <label class="form-check-label" for="id_reject">
+                                            <i class="bi bi-x-circle text-danger"></i> Reject
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="action" id="id_request_modification"
+                                            value="request_modification" required>
+                                        <label class="form-check-label" for="id_request_modification">
+                                            <i class="bi bi-pencil-square text-warning"></i> Request Modification
+                                        </label>
+                                    </div>
+                                </div>
+                                {% if form.action.errors %}
+                                <small class="text-danger d-block mt-2">{{ form.action.errors.0 }}</small>
+                                {% endif %}
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <label for="id_comments" class="form-label fw-bold">Comments <span
+                                        class="text-danger">*</span></label>
+                                {{ form.comments }}
+                                {% if form.comments.errors %}
+                                <small class="text-danger d-block">{{ form.comments.errors.0 }}</small>
+                                {% endif %}
+                                <small class="form-text text-muted">Required - Explain your decision</small>
+                            </div>
+
+                            <hr>
+
+                            <div class="mb-3">
+                                <label for="id_additional_document" class="form-label fw-bold">Additional Document <span class="badge bg-info">Optional</span></label>
+                                {{ form.additional_document }}
+                                {% if form.additional_document.errors %}
+                                <small class="text-danger d-block">{{ form.additional_document.errors.0 }}</small>
+                                {% endif %}
+                                <small class="form-text text-muted">Upload an additional PDF document if needed (optional)</small>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check-circle"></i> Submit Decision
+                                </button>
+                                <a href="{% url 'approvals:pending_approvals' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancel
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Approval Timeline -->
+                <div class="card mt-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Approval Flow</h6>
+                    </div>
+                    <div class="card-body p-3">
+                        <div class="approval-timeline">
+                            <div class="timeline-item {% if approval.approval_level >= 1 %}completed{% endif %}">
+                                <div class="timeline-marker">1</div>
+                                <div class="timeline-content">
+                                    <strong>Department Head</strong>
+                                    <small class="text-muted d-block">
+                                        {% if approval.approval_level == 1 %}
+                                        <i class="bi bi-hourglass-split"></i> Current
+                                        {% else %}
+                                        <i class="bi bi-check-circle text-success"></i> Completed
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item {% if approval.approval_level >= 2 %}completed{% endif %}">
+                                <div class="timeline-marker">2</div>
+                                <div class="timeline-content">
+                                    <strong>Admin</strong>
+                                    <small class="text-muted d-block">
+                                        {% if approval.approval_level == 2 %}
+                                        <i class="bi bi-hourglass-split"></i> Current
+                                        {% elif approval.approval_level > 2 %}
+                                        <i class="bi bi-check-circle text-success"></i> Completed
+                                        {% else %}
+                                        <i class="bi bi-dash-circle text-secondary"></i> Pending
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item {% if approval.approval_level >= 3 %}completed{% endif %}">
+                                <div class="timeline-marker">3</div>
+                                <div class="timeline-content">
+                                    <strong>CFO</strong>
+                                    <small class="text-muted d-block">
+                                        {% if approval.approval_level == 3 %}
+                                        <i class="bi bi-hourglass-split"></i> Current
+                                        {% elif approval.approval_level > 3 %}
+                                        <i class="bi bi-check-circle text-success"></i> Completed
+                                        {% else %}
+                                        <i class="bi bi-dash-circle text-secondary"></i> Pending
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="timeline-item {% if approval.approval_level >= 4 %}completed{% endif %}">
+                                <div class="timeline-marker">4</div>
+                                <div class="timeline-content">
+                                    <strong>CEO</strong>
+                                    <small class="text-muted d-block">
+                                        {% if approval.approval_level == 4 %}
+                                        <i class="bi bi-hourglass-split"></i> Current
+                                        {% else %}
+                                        <i class="bi bi-dash-circle text-secondary"></i> Pending
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control,
+    .form-select {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-check-input {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-top: 0.25rem;
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .approval-timeline {
+        position: relative;
+    }
+
+    .timeline-item {
+        display: flex;
+        margin-bottom: 1.5rem;
+        align-items: flex-start;
+    }
+
+    .timeline-marker {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #e9ecef;
+        color: #666;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .timeline-item.completed .timeline-marker {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .timeline-content {
+        margin-left: 1rem;
+    }
+
+    .timeline-content strong {
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}

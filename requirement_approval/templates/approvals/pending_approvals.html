@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Pending Approvals - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-hourglass-split"></i> Pending Approvals</h2>
+        <p class="text-muted">Requirements awaiting your approval</p>
+    </div>
+</div>
+
+<!-- Pending Approvals Section -->
+{% if pending_approvals %}
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-clock"></i> Awaiting Your Review ({{ pending_count }})</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Req ID</th>
+                    <th>Description</th>
+                    <th>Department</th>
+                    <th>Priority</th>
+                    <th>Cost</th>
+                    <th>Requested By</th>
+                    <th>Requested Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in pending_approvals %}
+                <tr>
+                    <td><strong>#{{ approval.requirement.id }}</strong></td>
+                    <td>
+                        <small>{{ approval.requirement.item_description|truncatewords:10 }}</small>
+                    </td>
+                    <td>{{ approval.requirement.get_department_display }}</td>
+                    <td>
+                        <span class="badge bg-{% if approval.requirement.priority == 'critical' %}danger{% elif approval.requirement.priority == 'high' %}warning{% elif approval.requirement.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                            {{ approval.requirement.get_priority_display }}
+                        </span>
+                    </td>
+                    <td>{{ approval.requirement.estimated_cost|floatformat:2 }}</td>
+                    <td>{{ approval.requirement.requested_by.get_full_name }}</td>
+                    <td><small>{{ approval.requirement.created_date|date:"M d, Y" }}</small></td>
+                    <td>
+                        <a href="{% url 'approvals:approve_requirement' approval.id %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pencil-square"></i> Review
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info" role="alert">
+    <i class="bi bi-info-circle"></i> No pending approvals at this time. Good job!
+</div>
+{% endif %}
+
+<!-- Past Approvals Section -->
+{% if past_approvals %}
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="bi bi-check-circle"></i> Your Recent Actions (Last 10)</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Req ID</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Comments</th>
+                    <th>Action Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in past_approvals %}
+                <tr>
+                    <td><strong>#{{ approval.requirement.id }}</strong></td>
+                    <td>
+                        <small>{{ approval.requirement.item_description|truncatewords:10 }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if approval.status == 'approved' %}success{% else %}danger{% endif %}">
+                            {{ approval.get_status_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <small>{{ approval.comments|truncatewords:8|default:"-" }}</small>
+                    </td>
+                    <td><small>{{ approval.approved_date|date:"M d, Y H:i"|default:"-" }}</small></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<style>
+    .table {
+        font-size: 0.95rem;
+    }
+    .badge {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}

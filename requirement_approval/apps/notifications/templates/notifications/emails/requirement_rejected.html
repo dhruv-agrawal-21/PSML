@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            padding: 30px;
+            color: #333;
+        }
+
+        .info-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .info-row {
+            margin: 10px 0;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #721c24;
+        }
+
+        .rejection-badge {
+            background-color: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            display: inline-block;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>❌ Requirement Rejected</h1>
+        </div>
+
+        <div class="content">
+            <p>Dear {{ recipient_name }},</p>
+
+            <p>We regret to inform you that your requirement has been <strong>rejected</strong> during the approval
+                process.</p>
+
+            <center>
+                <div class="rejection-badge">✗ REJECTED</div>
+            </center>
+
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">Requirement ID:</span> #{{ requirement.id }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Department:</span> {{ department }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Rejected By:</span> {{ rejected_by }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Rejection Date:</span> {{ requirement.updated_date|date:"F d, Y" }}
+                </div>
+            </div>
+
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">Rejection Comments:</span>
+                </div>
+                <p style="font-style: italic; color: #721c24;">{{ rejection_comments }}</p>
+            </div>
+
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">Your Item Description:</span>
+                </div>
+                <p>{{ requirement.item_description }}</p>
+            </div>
+
+            <p><strong>Next Steps:</strong></p>
+            <ul>
+                <li>Review the rejection comments carefully</li>
+                <li>Address the concerns raised by the approver</li>
+                <li>You may submit a new requirement with modifications if needed</li>
+                <li>Contact {{ rejected_by }} for clarification if required</li>
+            </ul>
+
+            <p style="margin-top: 30px; color: #721c24;">
+                <strong>Note:</strong> This requirement will not proceed further. Please review the feedback and
+                consider submitting a revised requirement if appropriate.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated notification from the Requirement Approval System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+
+</html>

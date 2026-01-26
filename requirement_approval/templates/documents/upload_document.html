@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Signed Document{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-file-earmark-arrow-up"></i> Upload Signed Document</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Requirement #{{ requirement.id }}</strong> - {{ requirement.item_description|truncatewords:15|default:"-" }}
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Approval Information</h5>
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="30%">Approval Level:</th>
+                                <td>{{ approval.get_approval_level_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Approver:</th>
+                                <td>{{ approval.approver.get_full_name }} ({{ approval.approver.get_role_display }})
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Department:</th>
+                                <td>{{ requirement.get_department_display }}</td>
+                            </tr>
+                            <tr>
+                                <th>Priority:</th>
+                                <td><span class="badge bg-{{ requirement.priority }}">{{
+                                        requirement.get_priority_display }}</span></td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-exclamation-triangle"></i> Important Instructions:</h6>
+                        <ol class="mb-0">
+                            <li>Download the requirement PDF from your email or the portal</li>
+                            <li>Review and sign the document</li>
+                            <li>Scan or save the signed document as a PDF</li>
+                            <li>Upload the signed PDF using the form below</li>
+                            <li>After upload, you can proceed to approve/reject the requirement</li>
+                        </ol>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" class="mt-4">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.file.id_for_label }}" class="form-label">
+                                <i class="bi bi-file-pdf"></i> {{ form.file.label }}
+                            </label>
+                            {{ form.file }}
+                            {% if form.file.errors %}
+                            <div class="text-danger mt-2">
+                                {% for error in form.file.errors %}
+                                <small>{{ error }}</small><br>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Only PDF files are accepted. Maximum file size: 10MB
+                            </small>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'approvals:approve_requirement' approval.id %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload"></i> Upload Document
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

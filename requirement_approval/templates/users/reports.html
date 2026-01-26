@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}System Reports - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-bar-chart"></i> {{ page_title }}</h2>
+            <button class="btn btn-success" onclick="window.print();">
+                <i class="bi bi-printer"></i> Print Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- System Overview Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Total Requirements</p>
+                        <h3 class="mb-0">{{ total_requirements }}</h3>
+                    </div>
+                    <i class="bi bi-file-earmark-check text-primary" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Total Approvals</p>
+                        <h3 class="mb-0">{{ total_approvals }}</h3>
+                    </div>
+                    <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Total Users</p>
+                        <h3 class="mb-0">{{ total_users }}</h3>
+                    </div>
+                    <i class="bi bi-people text-info" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Approved Budget</p>
+                        <h5 class="mb-0 text-success">{{ total_approved_cost|floatformat:2 }}</h5>
+                    </div>
+                    <i class="bi bi-currency-dollar text-success" style="font-size: 2rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Status Breakdown -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-pie-chart"></i> Requirements by Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Pending</span>
+                        <span class="badge bg-warning">{{ status_breakdown.pending }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: {{ status_percentages.pending }}%"></div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Approved</span>
+                        <span class="badge bg-success">{{ status_breakdown.approved }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: {{ status_percentages.approved }}%"></div>
+                    </div>
+                </div>
+                <div class="mb-0">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Rejected</span>
+                        <span class="badge bg-danger">{{ status_breakdown.rejected }}</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-danger" style="width: {{ status_percentages.rejected }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Priority Breakdown -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> By Priority Level</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>
+                            <span class="badge bg-danger me-2">Critical</span>
+                        </span>
+                        <strong>{{ priority_breakdown.critical }}</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>
+                            <span class="badge bg-warning me-2">High</span>
+                        </span>
+                        <strong>{{ priority_breakdown.high }}</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>
+                            <span class="badge bg-info me-2">Medium</span>
+                        </span>
+                        <strong>{{ priority_breakdown.medium }}</strong>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between">
+                        <span>
+                            <span class="badge bg-secondary me-2">Low</span>
+                        </span>
+                        <strong>{{ priority_breakdown.low }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Performance -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-building"></i> Department Performance</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for dept, stats in dept_stats.items %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="mb-0">{{ dept }}</h6>
+                            <span class="badge bg-primary">{{ stats.count }}</span>
+                        </div>
+                        <small class="text-muted">Budget: {{ stats.cost|floatformat:2 }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Top Approvers -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-person-check"></i> Top Approvers</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Approver Name</th>
+                                <th class="text-center">Approved</th>
+                                <th class="text-center">Rejected</th>
+                                <th class="text-center">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for approver in top_approvers %}
+                            <tr>
+                                <td>{{ approver.approver__first_name }} {{ approver.approver__last_name }}</td>
+                                <td class="text-center"><span class="badge bg-success">{{ approver.approved_count }}</span></td>
+                                <td class="text-center"><span class="badge bg-danger">{{ approver.rejected_count }}</span></td>
+                                <td class="text-center"><strong>{{ approver.total_count }}</strong></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">No approval data yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Approvals Trend -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-clock-history"></i> Recent Approvals (Last 30 Days)</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for approval in recent_approvals %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <strong>{{ approval.status|upper }}</strong>
+                        </span>
+                        <span class="badge bg-{% if approval.status == 'approved' %}success{% elif approval.status == 'rejected' %}danger{% else %}warning{% endif %}">
+                            {{ approval.count }} actions
+                        </span>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <p>No approval activity in last 30 days</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Requirements -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-list-ul"></i> Recent Requirements (Last 10)</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Description</th>
+                                <th>Requested By</th>
+                                <th>Department</th>
+                                <th>Cost</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in recent_requirements %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'requirements:detail' req.id %}" class="text-decoration-none">
+                                        #{{ req.id }}
+                                    </a>
+                                </td>
+                                <td>{{ req.item_description|truncatewords:8 }}</td>
+                                <td>{{ req.requested_by.get_full_name }}</td>
+                                <td>{{ req.get_department_display }}</td>
+                                <td>{{ req.estimated_cost|floatformat:2 }}</td>
+                                <td>
+                                    <span class="badge bg-{% if req.priority == 'critical' %}danger{% elif req.priority == 'high' %}warning{% elif req.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                                        {{ req.get_priority_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge status-{{ req.status }}">
+                                        {{ req.get_status_display }}
+                                    </span>
+                                </td>
+                                <td><small class="text-muted">{{ req.created_date|date:"M d, Y" }}</small></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">No requirements yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .stat-card {
+        border: none;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .stat-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-approved {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .status-rejected {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .list-group-item {
+        padding: 0.75rem 1rem;
+    }
+    
+    table {
+        font-size: 0.95rem;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    @media print {
+        .btn-success,
+        .navbar,
+        .sidebar {
+            display: none;
+        }
+        
+        .main-content {
+            margin-left: 0;
+        }
+        
+        .card {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}

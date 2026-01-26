@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+            color: #333;
+        }
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-row {
+            margin: 10px 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        .priority-high {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .priority-critical {
+            color: #dc3545;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>📋 New Requirement Created</h1>
+        </div>
+        
+        <div class="content">
+            <p>Dear {{ recipient_name }},</p>
+            
+            <p>A new requirement has been submitted by <strong>{{ requester_name }}</strong> from the <strong>{{ department }}</strong> department and requires your approval.</p>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">Requirement ID:</span> #{{ requirement.id }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Department:</span> {{ department }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Priority:</span> 
+                    <span class="{% if requirement.priority == 'high' or requirement.priority == 'critical' %}priority-{{ requirement.priority }}{% endif %}">
+                        {{ priority }}
+                    </span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Estimated Cost:</span> ${{ requirement.estimated_cost }}
+                </div>
+                <div class="info-row">
+                    <span class="label">Quotation Deadline:</span> {{ requirement.quotation_deadline }}
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span class="label">Item Description:</span>
+                </div>
+                <p>{{ requirement.item_description }}</p>
+                
+                {% if requirement.justification %}
+                <div class="info-row">
+                    <span class="label">Justification:</span>
+                </div>
+                <p>{{ requirement.justification }}</p>
+                {% endif %}
+            </div>
+            
+            <p><strong>Action Required:</strong></p>
+            <ul>
+                <li>Review the attached requirement PDF</li>
+                <li>Sign the document if approved</li>
+                <li>Upload the signed document to the portal</li>
+                <li>Provide your approval decision with comments</li>
+            </ul>
+            
+            <center>
+                <a href="{{ request.build_absolute_uri }}" class="button">Review Requirement</a>
+            </center>
+            
+            <p style="margin-top: 30px; color: #666; font-size: 14px;">
+                <strong>Note:</strong> The requirement PDF is attached to this email. Please review it carefully before making your decision.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated notification from the Requirement Approval System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
