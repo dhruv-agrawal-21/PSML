@@ -177,9 +177,17 @@ def edit_requirement_view(request, requirement_id):
         messages.error(request, 'You do not have permission to edit this requirement.')
         return redirect('requirements:list_requirements')
     
+    # Additional check: only creator can edit when status is modification_requested
+    if requirement.status == 'modification_requested' and not is_creator:
+        messages.error(request, 'Only the requirement creator can edit a requirement pending modifications.')
+        return redirect('requirements:detail', requirement_id=requirement_id)
+    
     if request.method == 'POST':
         form = RequirementForm(request.POST, instance=requirement)
         if form.is_valid():
+            # Store original status to check if modification_requested
+            was_modification_requested = requirement.status == 'modification_requested'
+            
             # Track changes for audit log
             changes = {}
             for field in form.changed_data:
@@ -193,16 +201,73 @@ def edit_requirement_view(request, requirement_id):
             # Save the requirement
             requirement = form.save()
             
-            # Create audit log with detailed changes
-            if changes:
-                change_details = '\n'.join([
-                    f'{field}: {change["from"]} → {change["to"]}'
-                    for field, change in changes.items()
-                ])
-                details = f'Requirement modified by {user.get_full_name()} ({user.get_role_display()})\n\nChanges:\n{change_details}'
+            # If modifying after modification request, reset approval chain
+            if was_modification_requested:
+                # Update status and modification flags
+                requirement.status = 'pending'
+                requirement.was_modified = True
+                requirement.last_modified_date = timezone.now()
+                
+                # Find department head as next approver
+                try:
+                    dept_head = CustomUser.objects.get(
+                        role='head',
+                        department=requirement.department
+                    )
+                    requirement.next_approver = dept_head
+                except CustomUser.DoesNotExist:
+                    messages.error(request, 'Department head not found for this department. Changes saved but approval chain could not be reset.')
+                    requirement.save()
+                    return redirect('requirements:detail', requirement_id=requirement_id)
+                
+                requirement.save()
+                
+                # Delete all existing approvals (reset chain)
+                Approval.objects.filter(requirement=requirement).delete()
+                
+                # Create new level 1 approval for department head
+                Approval.objects.create(
+                    requirement=requirement,
+                    approver=dept_head,
+                    approval_level=1,
+                    status='pending'
+                )
+                
+                # Create detailed audit log
+                if changes:
+                    change_details = '\n'.join([
+                        f'{field}: {change["from"]} → {change["to"]}'
+                        for field, change in changes.items()
+                    ])
+                    details = f'Requirement modified by {user.get_full_name()} in response to modification request\n\nChanges:\n{change_details}\n\nApproval chain restarted from Level 1 (Department Head)'
+                else:
+                    details = f'Requirement resubmitted by {user.get_full_name()} after modification request\n\nApproval chain restarted from Level 1 (Department Head)'
+                
+                # Send email notification to department head
+                email_sent = EmailNotificationService.send_requirement_created_notification(requirement)
+                
+                success_msg = f'Requirement {requirement.id} updated and resubmitted successfully! Approval process has restarted from Department Head.'
+                if not email_sent:
+                    success_msg += ' (Email notification failed - please notify approver manually)'
+                
+                messages.success(request, success_msg)
             else:
-                details = f'Requirement viewed/accessed by {user.get_full_name()}'
+                # Normal edit - not a modification response
+                # Ensure requirement is saved (form.save() already saved, but be explicit)
+                requirement.save()
+                
+                if changes:
+                    change_details = '\n'.join([
+                        f'{field}: {change["from"]} → {change["to"]}'
+                        for field, change in changes.items()
+                    ])
+                    details = f'Requirement modified by {user.get_full_name()} ({user.get_role_display()})\n\nChanges:\n{change_details}'
+                else:
+                    details = f'Requirement viewed/accessed by {user.get_full_name()}'
+                
+                messages.success(request, f'Requirement {requirement.id} updated successfully!')
             
+            # Create audit log
             AuditLog.objects.create(
                 requirement=requirement,
                 user=user,
@@ -210,7 +275,6 @@ def edit_requirement_view(request, requirement_id):
                 details=details
             )
             
-            messages.success(request, f'Requirement {requirement.id} updated successfully!')
             return redirect('requirements:detail', requirement_id=requirement_id)
     else:
         form = RequirementForm(instance=requirement)

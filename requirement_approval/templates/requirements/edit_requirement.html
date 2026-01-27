@@ -21,18 +21,28 @@
                 <h6 class="mb-0">Edit Requirement Details</h6>
             </div>
             <div class="card-body">
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <strong>Form Error:</strong>
+                    {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                
                 <form method="POST" class="needs-validation" novalidate>
                     {% csrf_token %}
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="{{ form.item_description.id_for_label }}" class="form-label">
-                                Item Description <span class="text-danger">*</span>
+                            <label for="{{ form.department.id_for_label }}" class="form-label">
+                                Department <span class="text-danger">*</span>
                             </label>
-                            {{ form.item_description }}
-                            {% if form.item_description.errors %}
+                            {{ form.department }}
+                            {% if form.department.errors %}
                             <div class="invalid-feedback d-block">
-                                {{ form.item_description.errors.0 }}
+                                {{ form.department.errors.0 }}
                             </div>
                             {% endif %}
                         </div>
@@ -49,6 +59,30 @@
                         </div>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.item_description.id_for_label }}" class="form-label">
+                                Item Description <span class="text-danger">*</span>
+                            </label>
+                            {{ form.item_description }}
+                            {% if form.item_description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.item_description.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.justification.id_for_label }}" class="form-label">
+                                Justification
+                            </label>
+                            {{ form.justification }}
+                            {% if form.justification.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.justification.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="{{ form.priority.id_for_label }}" class="form-label">
@@ -97,18 +131,6 @@
                             </div>
                             {% endif %}
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.justification.id_for_label }}" class="form-label">
-                            Justification
-                        </label>
-                        {{ form.justification }}
-                        {% if form.justification.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.justification.errors.0 }}
-                        </div>
-                        {% endif %}
                     </div>
 
                     <div class="mb-3">

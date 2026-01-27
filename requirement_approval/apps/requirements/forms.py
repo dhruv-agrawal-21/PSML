@@ -90,6 +90,11 @@ class RequirementForm(forms.ModelForm):
 
     def clean_quotation_deadline(self):
         deadline = self.cleaned_data.get('quotation_deadline')
-        if deadline and deadline < timezone.now().date():
+        # Only validate future date if this is a new requirement (no instance) or if deadline is being changed
+        if deadline and self.instance.pk:
+            # Editing existing requirement - allow any valid date (past dates OK for already-created requirements)
+            return deadline
+        elif deadline and deadline < timezone.now().date():
+            # Creating new requirement - must be future date
             raise forms.ValidationError('Quotation deadline cannot be in the past.')
         return deadline

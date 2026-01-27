@@ -2,35 +2,41 @@
 
 ## Project Overview
 
-This is a **Django 4.2 multi-tier approval workflow system** for managing material/service requirements with role-based access control, email notifications, PDF generation, and audit logging. Requirements flow through a 4-level approval chain: Department Head → Admin → CFO → CEO.
+This is a **Django 4.2 multi-tier approval workflow system** for material/service requirements with 4-level approval chain: Department Head (level 1) → Admin (level 2) → CFO (level 3) → CEO (level 4). Core features: role-based access control, email notifications with PDF attachments, automatic chain routing, modification requests, signed document uploads, and full audit logging.
 
-**Key Tech Stack:** Django 4.2, MySQL 8.0+, ReportLab (PDF), Celery+Redis (async tasks), Pillow (image handling)
+**Key Tech Stack:** Django 4.2, MySQL 8.0+ (required, not SQLite), ReportLab + WeasyPrint (PDF), Celery+Redis (configured but async not yet implemented), Pillow (image handling)
+
+**Database:** MySQL only. Custom `CustomUser` auth model with role/department fields. 6 apps: users, requirements, approvals, documents, notifications, audit.
 
 ---
 
 ## Architecture & Critical Data Flows
 
 ### 1. **Requirement Creation → Multi-Tier Approval Chain**
-- **Flow:** Department User creates Requirement → auto-assigned to their Dept Head (level 1) → on approval, auto-chain to Admin (level 2) → CFO (level 3) → CEO (level 4)
-- **Key Files:** [apps/requirements/models.py](apps/requirements/models.py), [apps/requirements/views.py](apps/requirements/views.py#L15-L70), [apps/approvals/views.py](apps/approvals/views.py#L38-L100)
-- **Key Model Fields:**
-  - `Requirement.status` (pending/approved/rejected) - tracks overall requirement state
-  - `Requirement.next_approver` - cached pointer to current approver (optimization for querying)
-  - `Approval.approval_level` (1-4 enum) - tracks position in approval chain
-  - `Approval.status` (pending/approved/rejected) - per-approver decision
+- **Linear Flow:** `pending` → Level 1 (Head) → Level 2 (Admin) → Level 3 (CFO) → Level 4 (CEO) → `approved` OR any rejection → `rejected`
+- **Auto-routing:** When approver approves, next Approval record created with level+1; next approver looked up by role mapping
+- **Rejection Blocks Chain:** If any level rejects, requirement.status → `rejected`, no further approvals created
+- **Status Semantics:** `Requirement.status` = final state (only changed on full completion/rejection); `Approval.status` = individual approver decision
+- **Requirement.next_approver:** Performance optimization - cached pointer to current pending approver; MUST update when routing to next level
+- **Modification Flow:** Separate from main chain - approver can request modifications (creates `request_modification` Approval), requirement goes to `modification_requested`, requester resubmits, re-enters same approval level
 
 ### 2. **Email Notification Service with PDF Attachments**
-- **Trigger Points:** Requirement created, approved, rejected, escalated
-- **Key Service:** [apps/notifications/email_service.py](apps/notifications/email_service.py) - centralized service with methods for each workflow state
-- **PDF Generation:** [apps/requirements/pdf_utils.py](apps/requirements/pdf_utils.py) - ReportLab-based PDF with requirement details + approver chain
-- **Email Config:** `.env` variables (EMAIL_BACKEND, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL) - defaults to console backend for testing
+- **Centralized Service:** [apps/notifications/email_service.py](apps/notifications/email_service.py) has static methods: `send_requirement_created_notification()`, `send_approval_notification()`, etc.
+- **PDF Always Attached:** Every email includes ReportLab PDF with requirement details + full approval chain. Use `generate_requirement_pdf(requirement)` from [apps/requirements/pdf_utils.py](apps/requirements/pdf_utils.py)
+- **Pattern:** Never call `EmailMessage` directly in views - always use `EmailNotificationService.send_*()` methods; they return boolean, check result before user message
+- **Config:** `.env` has EMAIL_BACKEND (console default for dev), EMAIL_HOST, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DEFAULT_FROM_EMAIL. Run `check_env.py` to validate
+- **Logging:** All sent/failed emails logged to `EmailLog` model for audit trail
 
-### 3. **Role-Based Access Control**
-- **Custom User Model:** [apps/users/models.py](apps/users/models.py) extends AbstractUser with role + department fields
-- **Roles:** user (dept user), head (dept head), admin, cfo, ceo - each sees different requirement subsets
-- **Role Checks in Views:** Use `user.is_department_user()`, `user.is_department_head()`, `user.is_admin_user()`, etc. helper methods
-- **Permission Logic:** Department users see only own requirements; heads see dept requirements; admins/cfo/ceo see all
-
+### 3. **Role-Based Access Control**- CustomUser extends AbstractUser with `role` (user/head/admin/cfo/ceo) + `department` (finance/marketing/sales/technical/executive)
+- **Role Helper Methods:** `is_department_user()`, `is_department_head()`, `is_admin_user()`, `is_cfo()`, `is_ceo()` on CustomUser instance
+- **View Pattern:** Check role early; redirect if insufficient; then filter querysets:
+  - **user:** can see only own requirements
+  - **head:** can see department's requirements + approve at level 1
+  - **admin/cfo/ceo:** can see all requirements + approve at their respective level
+- **Approval Level ↔ Role Mapping:** Hardcoded in [apps/apprimmutable log entries: requirement, user, action (created/approved/rejected/modified/request_modification), details, timestamp
+- **Pattern:** Every state-changing view must create AuditLog: `AuditLog.objects.create(requirement=req, user=request.user, action='action_name', details='...')`
+- **Query Examples:** `AuditLog.objects.filter(requirement=req).order_by('timestamp')` for audit trail; logs all decisions + who made them + when
+- **Requirement.was_modified Flag:** Set to True when requirement resubmitted after modification request; `last_modified_date` tracks submission timestamp
 ### 4. **Audit Trail & Compliance**
 - **Model:** [apps/audit/models.py](apps/audit/models.py) - logs every action (created, approved, rejected, modified)
 - **Key Pattern:** Every view that changes state creates AuditLog entry with user, action, timestamp, details
@@ -40,145 +46,222 @@ This is a **Django 4.2 multi-tier approval workflow system** for managing materi
 
 ## Project-Specific Conventions & Patterns
 
-### 1. **Form Handling & Validation**
-- Forms in [apps/*/forms.py](apps/requirements/forms.py) handle both validation and business logic
-- Use `form.save(commit=False)` pattern to inject user/department before persisting
-- Always redirect on success, re-render with form on validation error
+### 1. **Form Handling & Validation** 
+- Forms in [apps/*/forms.py](apps/requirements/forms.py) include validation; use `form.save(commit=False)` to inject user/department context before persist
+- Always post-redirect-get: success → `redirect()`, validation error → re-render with form errors shown
 
-### 2. **Email Service Integration**
-- **Never** call `EmailMessage` directly in views - use `EmailNotificationService.send_*()` static methods
-- All methods return boolean (success/failure) - check return value and message user appropriately
-- PDF attachment is auto-generated; callers don't need to handle PDF generation separately
-- Example: [apps/requirements/views.py#L63-L67](apps/requirements/views.py#L63-L67)
+### 2. **View Permission Check Pattern**
+```python
+# START of every approval/modify view
+@login_required(login_url='users:login')
+def approve_view(request, approval_id):
+    approval = get_object_or_404(Approval, id=approval_id)
+    if approval.approver != request.user:
+        messages.error(request, 'You cannot approve this.')
+        return redirect('dashboard')
+    # ... rest of logic
+```
 
-### 3. **PDF Generation**
-- Always use `generate_requirement_pdf(requirement)` from [apps/requirements/pdf_utils.py](apps/requirements/pdf_utils.py)
-- Returns PDF bytes; used by email service and download endpoints
-- Includes all approvals chain, signatures, timestamps - full audit trail in PDF
+### 3. **Approval Chain Routing - Exact Pattern**
+When approver approves:
+```python
+# 1. Save approval with status='approved'
+approval.status = 'approved'
+approval.approved_date = timezone.now()
+approval.save()
 
-### 4. **Approval Chain Routing**
-- When approver approves, **automatically** create next Approval record with level+1 and find approver by role
-- Role-to-level mapping: 1=head, 2=admin, 3=cfo, 4=ceo (hardcoded in [apps/approvals/views.py](apps/approvals/views.py))
-- On rejection, **mark entire requirement as rejected**, do NOT create further approval records
-- Always notify next approver via email with PDF attached
+# 2. Check if final approval (level 4)
+if approval.approval_level == 4:
+    approval.requirement.status = 'approved'
+    approval.requirement.save()
+    EmailNotificationService.send_approval_final_notification(approval.requirement)
+else:
+    # 3. Auto-create next approval
+    next_level = approval.approval_level + 1
+    level_to_role = {1: 'head', 2: 'admin', 3: 'cfo', 4: 'ceo'}
+    next_approver = CustomUser.objects.get(role=level_to_role[next_level], ...)
+    
+    Approval.objects.create(
+        requirement=approval.requirement,
+        approver=next_approver,
+        approval_level=next_level,
+        status='pending'
+    )
+    
+    approval.requirement.next_approver = next_approver
+    approval.requirement.save()
+    EmailNotificationService.send_requirement_created_notification(approval.requirement)
 
-### 5. **Requirement Status vs Approval Status**
-- **Requirement.status** (pending/approved/rejected) = final requirement state (only set when ALL approvals complete)
-- **Approval.status** (pending/approved/rejected) = individual approver's decision
-- Until all 4 approvals are approved, requirement.status stays pending
-- On any rejection, requirement.status → rejected, further approvals blocked
+# 4. Create audit log
+AuditLog.objects.create(requirement=approval.requirement, user=request.user, 
+                       action='approved', details=f'Level {approval.approval_level} approved')
+```
 
-### 6. **Document Upload Workflow**
-- Department Head (level 1) receives PDF, doesn't need to upload signed version
-- Levels 2-4 (Admin, CFO, CEO) **must** upload signed document before approving
-- Check: `Document.objects.filter(approval=approval, is_signed=True).first()` before saving approval
-- Model: [apps/documents/models.py](apps/documents/models.py)
+### 4. **Rejection Pattern - Blocks Entire Chain**
+```python
+approval.status = 'rejected'
+approval.comments = request.POST.get('comments', '')
+approval.save()
+
+approval.requirement.status = 'rejected'
+approval.requirement.save()
+
+# Delete any pending approvals at higher levels
+Approval.objects.filter(requirement=approval.requirement, 
+                       status='pending', 
+                       approval_level__gt=approval.approval_level).delete()
+
+AuditLog.objects.create(requirement=approval.requirement, user=request.user,
+                       action='rejected', details=f'Rejected at level {approval.approval_level}')
+```
+
+### 5. **Modification Request Pattern**
+```python
+# Approver requests modification instead of approving/rejecting
+approval.status = 'request_modification'
+approval.comments = request.POST.get('comments', '')
+approval.save()
+
+approval.requirement.status = 'modification_requested'
+approval.requirement.save()
+
+# Notify requester; they resubmit and requirement re-enters at SAME level
+EmailNotificationService.send_modification_request_notification(approval)
+```
+
+### 6. **Requirement.next_approver Caching**
+- Updated whenever approval chain advances or requirement resubmitted after modification
+- Used for fast dashboard queries: `Requirement.objects.filter(next_approver=user)`
+- **Must update when routing to next level** OR when modification resubmitted (reset to current approver)
+
+### 7. **PDF Generation & Email Attachment**
+- Always call: `pdf_bytes = generate_requirement_pdf(requirement)` - returns bytes
+- Attach to email: `email.attach(f'REQ-{requirement.id}.pdf', pdf_bytes, 'application/pdf')`
+- PDF includes all Approval records in chain, comments, signatures field (for manual sign)
+
+### 8. **Document Upload (Signed PDFs)**
+- Levels 2-4 (Admin, CFO, CEO) **must** upload signed document before status='approved'
+- Check: `if not Document.objects.filter(approval=approval, is_signed=True).exists(): raise ValidationError`
+- Level 1 (Head) does NOT need to upload; only receives PDF to review
+- Model: [apps/documents/models.py](apps/documents/models.py) with `document_file`, `is_signed` fields
 
 ---
 
 ## Developer Workflows
 
-### Initial Setup
+### Initial Setup (First Time)
 ```bash
-# 1. Configure MySQL credentials in .env (see SETUP_GUIDE.md)
-# 2. Create database
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Create .env file in project root with MySQL credentials
+# Copy template values from SETUP_GUIDE.md
+
+# 3. Verify MySQL server running
+mysql -u root -p -e "SHOW DATABASES;"
+
+# 4. Create database
 mysql -u root -p -e "CREATE DATABASE requirement_approval CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-# 3. Run migrations (idempotent - safe to run multiple times)
-python manage.py makemigrations
+# 5. Run all migrations (idempotent - safe to repeat)
 python manage.py migrate
 
-# 4. Create demo users (or use Django admin)
+# 6. Create demo users (optional, for testing)
 python manage.py create_demo_users
 
-# 5. Start server
+# 7. Start dev server
 python manage.py runserver
 ```
 
-### Running Tests
-- Tests in [apps/*/tests.py](apps/requirements/tests.py) - follow Django test patterns
-- Run: `python manage.py test` (discovers all tests automatically)
+### Verification Commands
+```bash
+# Validate email configuration
+python check_env.py
+
+# Run migrations and show SQL
+python manage.py migrate --plan
+
+# Create superuser for Django admin
+python manage.py createsuperuser
+```
+
+### Testing
+- Test files: [apps/*/tests.py](apps/requirements/tests.py)
+- Run all: `python manage.py test`
+- Run specific app: `python manage.py test apps.requirements`
+- Tests auto-discover and use Django test database (not production MySQL)
 
 ### Debugging Email Issues
 - Run [check_env.py](check_env.py) to validate EMAIL_* environment variables
 - Console backend (default) prints emails to stdout; check Django debug output
 - For Gmail SMTP, use app-specific passwords (not account password)
 
-### Celery Tasks (Async Email)
-- Configured in settings.py but **not yet implemented** - tasks currently synchronous
-- Redis broker configured at `localhost:6379`
-- Future: migrate email sends to `@shared_task` decorated functions
+---
+
+## Data Model Quick Reference
+
+| Model | Key Fields | Purpose |
+|-------|-----------|---------|
+| `CustomUser` | role, department, is_active | Auth; role+dept determine approval routing |
+| `Requirement` | requested_by, status, next_approver, was_modified | Tracks requirement lifecycle; status={pending/modification_requested/approved/rejected} |
+| `Approval` | requirement, approver, approval_level, status, comments | Per-approver decision; level 1-4; status={pending/approved/rejected/request_modification} |
+| `Document` | approval, document_file, is_signed | Signed PDFs uploaded by levels 2-4 |
+| `AuditLog` | requirement, user, action, details, timestamp | Immutable audit trail |
+| `EmailLog` | requirement, recipient, status, sent_at | Email delivery tracking |
 
 ---
 
-## Key Files Quick Reference
+## Common Implementation Patterns
 
-| Purpose | File | Notes |
-|---------|------|-------|
-| Models - Requirement lifecycle | [apps/requirements/models.py](apps/requirements/models.py) | Status choices, type choices, next_approver pointer |
-| Models - Approval chain | [apps/approvals/models.py](apps/approvals/models.py) | Level 1-4, per-approver decisions |
-| Views - Requirement flow | [apps/requirements/views.py](apps/requirements/views.py) | Creation, listing, role-based filtering |
-| Views - Approval logic | [apps/approvals/views.py](apps/approvals/views.py) | Pending approvals, approve/reject, chain routing |
-| Email service | [apps/notifications/email_service.py](apps/notifications/email_service.py) | Centralized notification hub |
-| PDF generation | [apps/requirements/pdf_utils.py](apps/requirements/pdf_utils.py) | ReportLab-based PDF rendering |
-| URL routing | [config/urls.py](config/urls.py) | App includes, media/static file serving |
-| Settings | [config/settings.py](config/settings.py) | CustomUser auth, MySQL, email config, Celery |
-| Demo data | [apps/users/management/commands/create_demo_users.py](apps/users/management/commands/create_demo_users.py) | Creates test users for each role/dept |
-
----
-
-## Common Tasks & Code Patterns
-
-### Adding a new approval notification
+### Pattern: List Requirements Filtered by Role
 ```python
-# In apps/notifications/email_service.py, add method following pattern:
-@staticmethod
-def send_approval_status_notification(approval, is_approved):
-    recipient_email = approval.requirement.requested_by.email
-    context = {'approval': approval, 'is_approved': is_approved}
-    subject = f"REQ-{approval.requirement.id}: {'Approved' if is_approved else 'Rejected'}"
-    html_message = render_to_string('notifications/emails/approval_status.html', context)
-    email = EmailMessage(subject=subject, body=html_message, 
-                        from_email=settings.DEFAULT_FROM_EMAIL, to=[recipient_email])
-    # Generate and attach PDF
-    pdf_content = generate_requirement_pdf(approval.requirement)
-    email.attach(f'REQ-{approval.requirement.id}.pdf', pdf_content, 'application/pdf')
-    return email.send() > 0
+from apps.requirements.models import Requirement
+
+def get_requirements_for_user(user):
+    if user.is_department_user():
+        return Requirement.objects.filter(requested_by=user)
+    elif user.is_department_head():
+        return Requirement.objects.filter(department=user.department)
+    else:  # admin, cfo, ceo - see all
+        return Requirement.objects.all()
 ```
 
-### Filtering requirements by user role
+### Pattern: Get Pending Approvals for Dashboard
 ```python
-# In views, use pattern from apps/requirements/views.py#L85-L100:
-if user.is_department_user():
-    requirements = Requirement.objects.filter(requested_by=user)
-elif user.is_department_head():
-    requirements = Requirement.objects.filter(department=user.department)
-else:  # admin, cfo, ceo
-    requirements = Requirement.objects.all()
+pending = Approval.objects.filter(
+    approver=request.user,
+    status='pending'
+).select_related('requirement', 'approver').order_by('-timestamp')
+
+# For each pending approval, check if signed doc required
+for approval in pending:
+    needs_doc = approval.approval_level > 1
+    has_doc = Document.objects.filter(approval=approval, is_signed=True).exists()
 ```
 
-### Creating audit log on state change
+### Pattern: Send Email After Action
 ```python
-AuditLog.objects.create(
-    requirement=requirement,
-    user=request.user,
-    action='approved',  # or 'rejected', 'created', etc.
-    details=f'{request.user.get_full_name()} approved with comments: {comments}'
-)
+# After approving/rejecting/creating
+from apps.notifications.email_service import EmailNotificationService
+
+success = EmailNotificationService.send_requirement_created_notification(requirement)
+if success:
+    messages.success(request, f'Requirement created and email sent to {requirement.next_approver.email}')
+else:
+    messages.warning(request, 'Requirement created but email failed. Check EMAIL_BACKEND config.')
 ```
 
 ---
 
-## Gotchas & Important Details
+## Gotchas & Common Issues
 
-1. **MySQL Connection Issues:** Requires `mysqlclient` Python package, NOT `mysql-connector-python`. If migrations fail, verify MySQL server running and credentials correct.
-
-2. **PDF Font Issues:** WeasyPrint + ReportLab may fail if system fonts missing. Ensure Arial/default fonts available on deployment OS.
-
-3. **Email Testing:** Console backend useful for dev; Gmail requires app-specific password (not regular account password). Never commit real credentials to `.env`.
-
-4. **Requirement.next_approver Stale Pointer:** This field is cached for performance but must be updated whenever approval chain advances. Always set when creating next Approval record.
-
-5. **Approval Level Hardcoding:** Role-to-level mapping is hardcoded in [apps/approvals/views.py](apps/approvals/views.py) - if adding new approval levels, update the dictionary there.
-
-6. **Media Files:** Document uploads (signed PDFs) go to `/media/documents/` - ensure writable on deployment and included in `.gitignore`.
+| Issue | Root Cause | Solution |
+|-------|-----------|----------|
+| **Migration fails** | MySQL not running OR credentials wrong | Check SETUP_GUIDE.md; run `python check_env.py` |
+| **PDF attachment missing in email** | `generate_requirement_pdf()` not called | Use EmailNotificationService methods; they auto-attach |
+| **Approval chain stuck** | Requirement.next_approver not updated after approval | Always set after creating next Approval record |
+| **Email to console (not sending)** | EMAIL_BACKEND='console.EmailBackend' in dev | Check settings.py; use console for dev, SMTP for prod |
+| **Signed document upload fails** | Document.approval FK wrong OR is_signed not set | Pass `approval=approval` to Document.save(); set flag on form |
+| **"You are not the approver" error** | Approval.approver != request.user | Check Approval lookup; ensure fetching correct approval record |
+| **Modification request not showing** | Status='request_modification' but requirement not marked | Always set `requirement.status='modification_requested'` when creating request_modification Approval |
+| **Permission denied in views** | No role check before filtering | Add role check BEFORE query: `if not user.can_approve(): return redirect()` |

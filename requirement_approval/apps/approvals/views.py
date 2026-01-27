@@ -62,134 +62,53 @@ def pending_modifications_view(request):
                 'approval': mod_approval,
                 'approver': mod_approval.approver,
                 'approver_level': mod_approval.get_approval_level_display(),
+                'approver_level_value': mod_approval.approval_level,
                 'comments': mod_approval.comments,
                 'requested_date': mod_approval.timestamp,
                 'additional_file': mod_approval.additional_document,
             })
     
+    # Apply search filter
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        modification_requests = [
+            m for m in modification_requests
+            if search_query.lower() in str(m['requirement'].id).lower() or
+               search_query.lower() in m['requirement'].item_description.lower()
+        ]
+    
+    # Apply level filter
+    level_filter = request.GET.get('approver_level', '').strip()
+    if level_filter:
+        modification_requests = [
+            m for m in modification_requests
+            if str(m['approver_level_value']) == level_filter
+        ]
+    
+    # Apply date filter
+    date_from = request.GET.get('date_from', '').strip()
+    if date_from:
+        from datetime import datetime
+        try:
+            filter_date = datetime.strptime(date_from, '%Y-%m-%d').date()
+            modification_requests = [
+                m for m in modification_requests
+                if m['requested_date'].date() >= filter_date
+            ]
+        except ValueError:
+            pass
+    
     context = {
         'page_title': 'Pending Modifications',
         'modification_requests': modification_requests,
         'pending_count': len(modification_requests),
+        'search_query': search_query,
+        'level_filter': level_filter,
+        'date_from': date_from,
     }
     
     return render(request, 'approvals/pending_modifications.html', context)
 
-
-@login_required(login_url='users:login')
-@require_http_methods(["GET", "POST"])
-def submit_modified_requirement_view(request, requirement_id):
-    """Creator resubmits modified requirement - restarts approval from level 1"""
-    from apps.requirements.forms import RequirementForm
-    
-    requirement = get_object_or_404(Requirement, id=requirement_id)
-    user = request.user
-    
-    # Check permission - only creator can resubmit
-    if requirement.requested_by != user:
-        messages.error(request, 'Only the requirement creator can resubmit modifications.')
-        return redirect('approvals:pending_modifications')
-    
-    # Check if status is modification_requested
-    if requirement.status != 'modification_requested':
-        messages.error(request, 'This requirement is not pending modifications.')
-        return redirect('requirements:detail', requirement_id=requirement_id)
-    
-    if request.method == 'POST':
-        form = RequirementForm(request.POST, instance=requirement)
-        
-        if form.is_valid():
-            # Track changes for audit log
-            changes = {}
-            for field in form.changed_data:
-                old_value = getattr(requirement, field)
-                new_value = form.cleaned_data[field]
-                changes[field] = {
-                    'from': str(old_value),
-                    'to': str(new_value)
-                }
-            
-            # Save form changes (editable fields only)
-            requirement = form.save()
-            
-            # Now set status and modification flags
-            requirement.status = 'pending'
-            requirement.was_modified = True
-            requirement.last_modified_date = timezone.now()
-            requirement.save()
-            
-            # Get department head as next approver
-            from apps.users.models import CustomUser
-            dept_head = None
-            try:
-                dept_head = CustomUser.objects.get(
-                    role='head',
-                    department=requirement.department
-                )
-                requirement.next_approver = dept_head
-                requirement.save()
-            except CustomUser.DoesNotExist:
-                messages.error(request, 'Department head not found for this department. Cannot restart approval.')
-                return redirect('requirements:detail', requirement_id=requirement_id)
-            
-            # Delete all existing approvals (reset approval chain)
-            Approval.objects.filter(requirement=requirement).delete()
-            
-            # Reset document status to 'pending' for resubmitted requirement
-            Document.objects.filter(requirement=requirement).update(status='pending')
-            
-            # Create new level 1 approval for department head
-            if dept_head:
-                Approval.objects.create(
-                    requirement=requirement,
-                    approver=dept_head,
-                    approval_level=1,
-                    status='pending'
-                )
-            
-            # Create audit log
-            if changes:
-                change_details = '\n'.join([
-                    f'{field}: {change["from"]} → {change["to"]}'
-                    for field, change in changes.items()
-                ])
-                details = f'Modified requirement resubmitted by {user.get_full_name()}\n\nChanges:\n{change_details}\n\nApproval chain restarted from Level 1 (Department Head)'
-            else:
-                details = f'Requirement resubmitted by {user.get_full_name()}\n\nApproval chain restarted from Level 1 (Department Head)'
-            
-            AuditLog.objects.create(
-                requirement=requirement,
-                user=user,
-                action='modified',
-                details=details
-            )
-            
-            # Send email notification to department head
-            email_sent = EmailNotificationService.send_requirement_created_notification(requirement)
-            
-            if email_sent:
-                messages.success(request, f'Requirement {requirement.id} resubmitted successfully! Approval process has restarted from Department Head.')
-            else:
-                messages.warning(request, f'Requirement {requirement.id} resubmitted, but email notification failed.')
-            
-            return redirect('requirements:detail', requirement_id=requirement_id)
-    else:
-        form = RequirementForm(instance=requirement)
-    
-    # Get the pending modification request details
-    mod_approval = Approval.objects.filter(
-        requirement=requirement,
-        status='request_modification'
-    ).order_by('-timestamp').first()
-    
-    context = {
-        'form': form,
-        'requirement': requirement,
-        'mod_approval': mod_approval,
-        'page_title': f'Resubmit Modified Requirement #{requirement.id}',
-    }
-    
-    return render(request, 'approvals/submit_modified_requirement.html', context)
 
 
 @login_required(login_url='users:login')
@@ -222,9 +141,9 @@ def approve_requirement_view(request, approval_id):
             comments = form.cleaned_data.get('comments')
             additional_doc = form.cleaned_data.get('additional_document')
             
-            # For approval (not rejection/modification), check if document is uploaded for levels > 1
-            # Department head (level 1) doesn't need to upload, they receive the original PDF
-            if action == 'approved' and approval.approval_level > 1 and not signed_document:
+            # For approval (not rejection/modification), check if document is uploaded
+            # All approval levels (including department head) must upload a signed document
+            if action == 'approved' and not signed_document:
                 messages.error(request, 'Please upload a signed document before approving.')
                 return redirect('documents:upload_signed_document', approval_id=approval.id)
             
@@ -364,7 +283,7 @@ def approve_requirement_view(request, approval_id):
         'form': form,
         'signed_document': signed_document,
         'all_documents': all_documents,
-        'needs_document': approval.approval_level > 1 and not signed_document,
+        'needs_document': not signed_document,
     }
     
     return render(request, 'approvals/approve_requirement.html', context)
