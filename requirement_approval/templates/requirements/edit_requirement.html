@@ -31,7 +31,7 @@
                 </div>
                 {% endif %}
                 
-                <form method="POST" class="needs-validation" novalidate>
+                <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
 
                     <div class="row mb-3">
@@ -48,7 +48,7 @@
                         </div>
                         <div class="col-md-6">
                             <label for="{{ form.requirement_type.id_for_label }}" class="form-label">
-                                Requirement Type <span class="text-danger">*</span>
+                                Approval Type <span class="text-danger">*</span>
                             </label>
                             {{ form.requirement_type }}
                             {% if form.requirement_type.errors %}
@@ -141,6 +141,24 @@
                         {% if form.delivery_address.errors %}
                         <div class="invalid-feedback d-block">
                             {{ form.delivery_address.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.attachment.id_for_label }}" class="form-label">
+                            Supporting Document
+                        </label>
+                        {{ form.attachment }}
+                        {% if form.attachment.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.attachment.errors.0 }}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Upload PDF, Word, Excel, or text files (Optional)</small>
+                        {% if requirement.attachment %}
+                        <div class="mt-2">
+                            <small class="text-muted">Current file: <a href="{{ requirement.attachment.url }}" target="_blank">{{ requirement.attachment.name }}</a></small>
                         </div>
                         {% endif %}
                     </div>

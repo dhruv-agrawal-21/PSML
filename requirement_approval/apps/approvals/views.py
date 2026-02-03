@@ -141,11 +141,11 @@ def approve_requirement_view(request, approval_id):
             comments = form.cleaned_data.get('comments')
             additional_doc = form.cleaned_data.get('additional_document')
             
-            # For approval (not rejection/modification), check if document is uploaded
-            # All approval levels (including department head) must upload a signed document
-            if action == 'approved' and not signed_document:
-                messages.error(request, 'Please upload a signed document before approving.')
-                return redirect('documents:upload_signed_document', approval_id=approval.id)
+            # For approval (not rejection/modification), signed document is now optional
+            # Previously required for all approval levels, now optional
+            # if action == 'approved' and not signed_document:
+            #     messages.error(request, 'Please upload a signed document before approving.')
+            #     return redirect('documents:upload_signed_document', approval_id=approval.id)
             
             # Update approval
             approval.status = action
@@ -277,13 +277,17 @@ def approve_requirement_view(request, approval_id):
     # Get all documents for this requirement
     all_documents = Document.objects.filter(requirement=requirement).order_by('approval__approval_level')
     
+    # Get all approvals for this requirement with related approver data
+    requirement_approvals = Approval.objects.filter(requirement=requirement).select_related('approver').order_by('approval_level')
+    
     context = {
         'approval': approval,
         'requirement': requirement,
         'form': form,
         'signed_document': signed_document,
         'all_documents': all_documents,
-        'needs_document': not signed_document,
+        'requirement_approvals': requirement_approvals,
+        'can_upload_document': not signed_document,
     }
     
     return render(request, 'approvals/approve_requirement.html', context)

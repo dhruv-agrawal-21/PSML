@@ -10,4 +10,7 @@ urlpatterns = [
     path('<int:requirement_id>/', views.requirement_detail_view, name='detail'),
     path('<int:requirement_id>/edit/', views.edit_requirement_view, name='edit'),
     path('<int:requirement_id>/download-pdf/', views.download_requirement_pdf_view, name='download_pdf'),
+    # Admin management URLs
+    path('admin/manage-departments/', views.manage_departments_view, name='manage_departments'),
+    path('admin/manage-requirement-types/', views.manage_requirement_types_view, name='manage_requirement_types'),
 ]

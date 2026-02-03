@@ -13,7 +13,7 @@
                 </a>
             </div>
             <div class="card-body">
-                <form method="post" action="{% url 'requirements:create' %}" novalidate>
+                <form method="post" action="{% url 'requirements:create' %}" enctype="multipart/form-data" novalidate>
                     {% csrf_token %}
 
                     <div class="row">
@@ -41,7 +41,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="id_requirement_type" class="form-label">Requirement Type <span class="text-danger">*</span></label>
+                                <label for="id_requirement_type" class="form-label">Approval Type <span class="text-danger">*</span></label>
                                 {{ form.requirement_type }}
                                 {% if form.requirement_type.errors %}
                                     <small class="text-danger d-block">{{ form.requirement_type.errors.0 }}</small>
@@ -121,6 +121,15 @@
                             <small class="text-danger d-block">{{ form.delivery_address.errors.0 }}</small>
                         {% endif %}
                         <small class="form-text text-muted">(Optional)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_attachment" class="form-label">Supporting Document</label>
+                        {{ form.attachment }}
+                        {% if form.attachment.errors %}
+                            <small class="text-danger d-block">{{ form.attachment.errors.0 }}</small>
+                        {% endif %}
+                        <small class="form-text text-muted">Upload PDF, Word, Excel, or text files (Optional)</small>
                     </div>
 
                     <hr>

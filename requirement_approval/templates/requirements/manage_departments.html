@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} - Requirement Approval System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-building"></i> {{ page_title }}</h2>
+            <a href="{% url 'users:dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Add New Department -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-plus-circle"></i> Add New Department</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add">
+                    
+                    <div class="col-md-5">
+                        <label for="id_value" class="form-label">Value <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="id_value" name="value" 
+                               placeholder="e.g., finance" required maxlength="50">
+                        <small class="form-text text-muted">Lowercase, no spaces</small>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <label for="id_display_name" class="form-label">Display Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="id_display_name" name="display_name" 
+                               placeholder="e.g., Finance" required maxlength="100">
+                        <small class="form-text text-muted">Human-readable name</small>
+                    </div>
+                    
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Existing Departments -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-list"></i> Existing Departments</h6>
+            </div>
+            <div class="card-body">
+                {% if departments %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Value</th>
+                                <th>Display Name</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dept in departments %}
+                            <tr>
+                                <td><code>{{ dept.value }}</code></td>
+                                <td>{{ dept.display_name }}</td>
+                                <td>
+                                    {% if dept.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle">
+                                        <input type="hidden" name="choice_id" value="{{ dept.id }}">
+                                        <button type="submit" class="btn btn-sm {% if dept.is_active %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                            {% if dept.is_active %}
+                                                <i class="bi bi-pause"></i> Deactivate
+                                            {% else %}
+                                                <i class="bi bi-play"></i> Activate
+                                            {% endif %}
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="post" class="d-inline ms-1">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="choice_id" value="{{ dept.id }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                                onclick="return confirm('Are you sure you want to delete this department?')">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No departments found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Info Panel -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Information</h6>
+            </div>
+            <div class="card-body">
+                <h6>Department Management</h6>
+                <ul class="mb-0 small">
+                    <li><strong>Value:</strong> Internal identifier (lowercase, no spaces)</li>
+                    <li><strong>Display Name:</strong> User-friendly name shown in forms</li>
+                    <li><strong>Active:</strong> Only active departments appear in forms</li>
+                    <li><strong>Delete:</strong> Only possible if no requirements use this department</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table th {
+        border-top: none;
+        font-weight: 600;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}

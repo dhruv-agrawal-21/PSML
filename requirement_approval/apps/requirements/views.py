@@ -24,7 +24,7 @@ def create_requirement_view(request):
         return redirect('users:dashboard')
     
     if request.method == 'POST':
-        form = RequirementForm(request.POST)
+        form = RequirementForm(request.POST, request.FILES)
         if form.is_valid():
             requirement = form.save(commit=False)
             requirement.requested_by = request.user
@@ -71,7 +71,8 @@ def create_requirement_view(request):
             
             return redirect('requirements:list_requirements')
     else:
-        form = RequirementForm()
+        # Set initial department to user's department
+        form = RequirementForm(initial={'department': request.user.department})
     
     return render(request, 'requirements/create_requirement.html', {'form': form})
 
@@ -183,7 +184,7 @@ def edit_requirement_view(request, requirement_id):
         return redirect('requirements:detail', requirement_id=requirement_id)
     
     if request.method == 'POST':
-        form = RequirementForm(request.POST, instance=requirement)
+        form = RequirementForm(request.POST, request.FILES, instance=requirement)
         if form.is_valid():
             # Store original status to check if modification_requested
             was_modification_requested = requirement.status == 'modification_requested'
@@ -314,5 +315,132 @@ def download_requirement_pdf_view(request, requirement_id):
     response['Content-Disposition'] = f'attachment; filename="Requirement_{requirement.id}.pdf"'
     
     return response
+
+
+# Admin management views
+@login_required(login_url='users:login')
+@require_http_methods(["GET", "POST"])
+def manage_departments_view(request):
+    """Admin view to manage department choices"""
+    user = request.user
+    
+    # Check if user is admin
+    if not user.is_admin_user():
+        messages.error(request, 'Only administrators can manage departments.')
+        return redirect('users:dashboard')
+    
+    from .models import DepartmentChoice
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            value = request.POST.get('value', '').strip().lower()
+            display_name = request.POST.get('display_name', '').strip()
+            
+            if value and display_name:
+                if DepartmentChoice.objects.filter(value=value).exists():
+                    messages.error(request, f'Department with value "{value}" already exists.')
+                else:
+                    DepartmentChoice.objects.create(value=value, display_name=display_name)
+                    messages.success(request, f'Department "{display_name}" added successfully.')
+            else:
+                messages.error(request, 'Both value and display name are required.')
+        
+        elif action == 'toggle':
+            choice_id = request.POST.get('choice_id')
+            try:
+                choice = DepartmentChoice.objects.get(id=choice_id)
+                choice.is_active = not choice.is_active
+                choice.save()
+                status = "activated" if choice.is_active else "deactivated"
+                messages.success(request, f'Department "{choice.display_name}" {status} successfully.')
+            except DepartmentChoice.DoesNotExist:
+                messages.error(request, 'Department not found.')
+        
+        elif action == 'delete':
+            choice_id = request.POST.get('choice_id')
+            try:
+                choice = DepartmentChoice.objects.get(id=choice_id)
+                # Check if department is in use
+                if Requirement.objects.filter(department=choice.value).exists():
+                    messages.error(request, f'Cannot delete department "{choice.display_name}" as it is being used by existing requirements.')
+                else:
+                    choice.delete()
+                    messages.success(request, f'Department "{choice.display_name}" deleted successfully.')
+            except DepartmentChoice.DoesNotExist:
+                messages.error(request, 'Department not found.')
+    
+    departments = DepartmentChoice.objects.all().order_by('display_name')
+    
+    context = {
+        'page_title': 'Manage Departments',
+        'departments': departments,
+    }
+    
+    return render(request, 'requirements/manage_departments.html', context)
+
+
+@login_required(login_url='users:login')
+@require_http_methods(["GET", "POST"])
+def manage_requirement_types_view(request):
+    """Admin view to manage requirement type choices"""
+    user = request.user
+    
+    # Check if user is admin
+    if not user.is_admin_user():
+        messages.error(request, 'Only administrators can manage requirement types.')
+        return redirect('users:dashboard')
+    
+    from .models import RequirementTypeChoice
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'add':
+            value = request.POST.get('value', '').strip().lower()
+            display_name = request.POST.get('display_name', '').strip()
+            
+            if value and display_name:
+                if RequirementTypeChoice.objects.filter(value=value).exists():
+                    messages.error(request, f'Requirement type with value "{value}" already exists.')
+                else:
+                    RequirementTypeChoice.objects.create(value=value, display_name=display_name)
+                    messages.success(request, f'Requirement type "{display_name}" added successfully.')
+            else:
+                messages.error(request, 'Both value and display name are required.')
+        
+        elif action == 'toggle':
+            choice_id = request.POST.get('choice_id')
+            try:
+                choice = RequirementTypeChoice.objects.get(id=choice_id)
+                choice.is_active = not choice.is_active
+                choice.save()
+                status = "activated" if choice.is_active else "deactivated"
+                messages.success(request, f'Requirement type "{choice.display_name}" {status} successfully.')
+            except RequirementTypeChoice.DoesNotExist:
+                messages.error(request, 'Requirement type not found.')
+        
+        elif action == 'delete':
+            choice_id = request.POST.get('choice_id')
+            try:
+                choice = RequirementTypeChoice.objects.get(id=choice_id)
+                # Check if requirement type is in use
+                if Requirement.objects.filter(requirement_type=choice.value).exists():
+                    messages.error(request, f'Cannot delete requirement type "{choice.display_name}" as it is being used by existing requirements.')
+                else:
+                    choice.delete()
+                    messages.success(request, f'Requirement type "{choice.display_name}" deleted successfully.')
+            except RequirementTypeChoice.DoesNotExist:
+                messages.error(request, 'Requirement type not found.')
+    
+    requirement_types = RequirementTypeChoice.objects.all().order_by('display_name')
+    
+    context = {
+        'page_title': 'Manage Requirement Types',
+        'requirement_types': requirement_types,
+    }
+    
+    return render(request, 'requirements/manage_requirement_types.html', context)
 
 

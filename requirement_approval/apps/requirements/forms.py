@@ -1,10 +1,22 @@
 from django import forms
 from django.utils import timezone
-from .models import Requirement
+from .models import Requirement, DepartmentChoice, RequirementTypeChoice
 
 
 class RequirementForm(forms.ModelForm):
     """Form for creating and editing requirements"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Use dynamic choices from database
+        self.fields['department'].choices = [
+            (choice.value, choice.display_name) 
+            for choice in DepartmentChoice.objects.filter(is_active=True)
+        ]
+        self.fields['requirement_type'].choices = [
+            (choice.value, choice.display_name) 
+            for choice in RequirementTypeChoice.objects.filter(is_active=True)
+        ]
     
     class Meta:
         model = Requirement
@@ -19,6 +31,7 @@ class RequirementForm(forms.ModelForm):
             'quantity',
             'duration',
             'delivery_address',
+            'attachment',
         ]
         widgets = {
             'department': forms.Select(attrs={
@@ -73,6 +86,11 @@ class RequirementForm(forms.ModelForm):
                 'rows': 3,
                 'placeholder': 'Full delivery address (Optional)',
                 'required': False,
+            }),
+            'attachment': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.doc,.docx,.xls,.xlsx,.txt',
+                'placeholder': 'Upload supporting document (Optional)',
             }),
         }
 

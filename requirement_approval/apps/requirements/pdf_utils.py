@@ -143,7 +143,13 @@ def generate_requirement_pdf(requirement):
     # Delivery Address
     elements.append(Paragraph('Delivery Address', heading_style))
     elements.append(Paragraph(requirement.delivery_address, normal_style))
-    elements.append(Spacer(1, 0.2*inch))
+    elements.append(Spacer(1, 0.15*inch))
+    
+    # Supporting Document
+    if requirement.attachment:
+        elements.append(Paragraph('Supporting Document', heading_style))
+        elements.append(Paragraph(f'Attached file: {requirement.attachment.name}', normal_style))
+        elements.append(Spacer(1, 0.15*inch))
     
     # Footer
     elements.append(Spacer(1, 0.3*inch))
