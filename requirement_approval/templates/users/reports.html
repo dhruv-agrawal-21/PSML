@@ -251,7 +251,6 @@
                                 <th>Description</th>
                                 <th>Requested By</th>
                                 <th>Department</th>
-                                <th>Cost</th>
                                 <th>Priority</th>
                                 <th>Status</th>
                                 <th>Date</th>
@@ -268,7 +267,6 @@
                                 <td>{{ req.item_description|truncatewords:8 }}</td>
                                 <td>{{ req.requested_by.get_full_name }}</td>
                                 <td>{{ req.get_department_display }}</td>
-                                <td>{{ req.estimated_cost|floatformat:2 }}</td>
                                 <td>
                                     <span class="badge bg-{% if req.priority == 'critical' %}danger{% elif req.priority == 'high' %}warning{% elif req.priority == 'medium' %}info{% else %}secondary{% endif %}">
                                         {{ req.get_priority_display }}

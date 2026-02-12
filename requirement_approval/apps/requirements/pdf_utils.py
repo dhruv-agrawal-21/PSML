@@ -101,49 +101,7 @@ def generate_requirement_pdf(requirement):
     elements.append(Paragraph(requirement.justification or 'N/A', normal_style))
     elements.append(Spacer(1, 0.15*inch))
     
-    # Financial Details
-    elements.append(Paragraph('Financial Details', heading_style))
-    financial_data = [
-        ['Estimated Cost:', f"{requirement.estimated_cost:,.2f}", 'Quantity:', str(requirement.quantity or 'N/A')],
-        ['Unit Cost:', f"{requirement.estimated_cost/requirement.quantity:,.2f}" if requirement.quantity and requirement.quantity > 0 else 'N/A', 'Total Cost:', f"{(requirement.estimated_cost*requirement.quantity):,.2f}" if requirement.quantity else 'N/A'],
-    ]
-    
-    financial_table = Table(financial_data, colWidths=[1.3*inch, 1.5*inch, 1.3*inch, 1.5*inch])
-    financial_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('PADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-    ]))
-    elements.append(financial_table)
-    elements.append(Spacer(1, 0.2*inch))
-    
-    # Timeline Details
-    elements.append(Paragraph('Timeline & Delivery', heading_style))
-    timeline_data = [
-        ['Duration:', requirement.duration, 'Quotation Deadline:', requirement.quotation_deadline.strftime('%m/%d/%Y')],
-    ]
-    
-    timeline_table = Table(timeline_data, colWidths=[1.3*inch, 1.5*inch, 1.8*inch, 1.5*inch])
-    timeline_table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), colors.lightblue),
-        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('PADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-    ]))
-    elements.append(timeline_table)
-    elements.append(Spacer(1, 0.15*inch))
-    
-    # Delivery Address
-    elements.append(Paragraph('Delivery Address', heading_style))
-    elements.append(Paragraph(requirement.delivery_address, normal_style))
-    elements.append(Spacer(1, 0.15*inch))
+
     
     # Supporting Document
     if requirement.attachment:

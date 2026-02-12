@@ -91,33 +91,7 @@
 
                 <hr>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p class="text-muted mb-1">Estimated Cost</p>
-                        <h6>{{ requirement.estimated_cost|floatformat:2|default:"-" }}</h6>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="text-muted mb-1">Quantity</p>
-                        <h6>{{ requirement.quantity|default:"-" }}</h6>
-                    </div>
-                </div>
 
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p class="text-muted mb-1">Quotation Deadline</p>
-                        <h6>{{ requirement.quotation_deadline|date:"M d, Y"|default:"-" }}</h6>
-                    </div>
-                    <div class="col-md-6">
-                        <p class="text-muted mb-1">Duration</p>
-                        <h6>{{ requirement.duration|default:"-" }}</h6>
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <p class="text-muted mb-1">Delivery Address</p>
-                    <p class="card-text" style="white-space: pre-wrap;">{{ requirement.delivery_address|default:"-" }}
-                    </p>
-                </div>
 
                 {% if requirement.attachment %}
                 <div class="mb-3">
@@ -219,12 +193,10 @@
             </div>
             <div class="card-body">
                 <div class="mb-3">
-                    <p class="text-muted mb-1">Total Cost</p>
-                    <h5 class="text-primary">{{ requirement.estimated_cost|floatformat:2 }}</h5>
-                </div>
-                <div class="mb-3">
-                    <p class="text-muted mb-1">Quantity x Unit Cost</p>
-                    <h6>{{ total_per_unit|floatformat:2 }}</h6>
+                    <p class="text-muted mb-1">Status</p>
+                    <span class="status-badge status-{{ requirement.status }}">
+                        {{ requirement.get_status_display }}
+                    </span>
                 </div>
                 <hr>
                 <div class="mb-3">

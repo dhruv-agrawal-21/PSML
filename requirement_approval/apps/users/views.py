@@ -65,9 +65,7 @@ def dashboard_view(request):
         context['page_title'] = 'CFO Dashboard'
         # Count high value approvals pending for CFO
         context['pending_count'] = Approval.objects.filter(approver=user, status='pending').count()
-        # Calculate total budget of all approved requirements
-        total_budget = Requirement.objects.filter(status='approved').aggregate(total=Sum('estimated_cost'))['total'] or 0
-        context['total_budget'] = total_budget
+
         
     elif user.role == 'ceo':
         context['page_title'] = 'CEO Dashboard'
@@ -75,9 +73,7 @@ def dashboard_view(request):
         context['pending_count'] = Approval.objects.filter(approver=user, status='pending').count()
         # Count critical priority items
         context['critical_count'] = Requirement.objects.filter(priority='critical', status='pending').count()
-        # Calculate total investments (all approved requirements)
-        total_investments = Requirement.objects.filter(status='approved').aggregate(total=Sum('estimated_cost'))['total'] or 0
-        context['total_investments'] = total_investments
+
     
     return render(request, 'users/dashboard.html', context)
 
@@ -138,9 +134,6 @@ def department_stats_view(request):
         'pending_count': dept_requirements.filter(status='pending').count(),
         'approved_count': dept_requirements.filter(status='approved').count(),
         'rejected_count': dept_requirements.filter(status='rejected').count(),
-        'total_cost': dept_requirements.filter(status='approved').aggregate(
-            total=Sum('estimated_cost')
-        )['total'] or 0,
     }
     
     context = {
@@ -331,9 +324,6 @@ def reports_view(request):
         approval_level=4,
         status='approved'
     ).count()
-    total_approved_cost = Requirement.objects.filter(
-        status='approved'
-    ).aggregate(total=Sum('estimated_cost'))['total'] or 0
     
     # Breakdown by status
     status_breakdown = {
@@ -370,11 +360,7 @@ def reports_view(request):
         if dept_code == 'executive':
             continue
         count = Requirement.objects.filter(department=dept_code).count()
-        cost = Requirement.objects.filter(
-            department=dept_code,
-            status='approved'
-        ).aggregate(total=Sum('estimated_cost'))['total'] or 0
-        dept_stats[dept_label] = {'count': count, 'cost': cost}
+        dept_stats[dept_label] = {'count': count}
     
     # Top approvers
     top_approvers = Approval.objects.values(
@@ -402,7 +388,6 @@ def reports_view(request):
         'total_requirements': total_requirements,
         'total_users': total_users,
         'total_approvals': total_approvals,
-        'total_approved_cost': total_approved_cost,
         'status_breakdown': status_breakdown,
         'status_percentages': status_percentages,
         'priority_breakdown': priority_breakdown,

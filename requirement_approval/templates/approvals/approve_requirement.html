@@ -18,8 +18,8 @@
         </div>
 
         <div class="row">
-            <!-- Requirement Details -->
-            <div class="col-md-7">
+            <!-- Col 1: Requirement Details -->
+            <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h5 class="mb-0"><i class="bi bi-file-earmark"></i> Requirement #{{ requirement.id }}</h5>
@@ -82,143 +82,33 @@
                         </div>
 
                         <hr>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="text-muted mb-1">Estimated Cost</p>
-                                <h6>{{ requirement.estimated_cost|floatformat:2|default:"-" }}</h6>
+                        {% if previous_approval and previous_approval.comments %}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-chat-left-text"></i> Previous Approver Comments</h6>
                             </div>
-                            <div class="col-md-6">
-                                <p class="text-muted mb-1">Quantity</p>
-                                <h6>{{ requirement.quantity|default:"-" }}</h6>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="text-muted mb-1">Duration</p>
-                                <h6>{{ requirement.duration|default:"-" }}</h6>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="text-muted mb-1">Delivery Address</p>
-                                <small>{{ requirement.delivery_address|default:"-" }}</small>
+                            <div class="card-body">
+                                <p class="mb-1"><strong>{{ previous_approval.approver.get_full_name }}</strong>
+                                <small class="text-muted">&nbsp;— {{ previous_approval.get_approval_level_display }}</small></p>
+                                <p class="mb-1 text-muted small">{{ previous_approval.timestamp|date:"M d, Y H:i" }}</p>
+                                <p class="mb-0" style="white-space: pre-wrap;">{{ previous_approval.comments }}</p>
+                                {% if previous_approval.additional_document %}
+                                <div class="mt-2">
+                                    <a href="{{ previous_approval.additional_document.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-download"></i> Download attached file
+                                    </a>
+                                </div>
+                                {% endif %}
                             </div>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
 
-            <!-- Documents Section -->
-            <div class="col-md-12 mb-4">
-                <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> All Documents for this Requirement</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Original Requirement Attachment -->
-                            <div class="col-md-4">
-                                <div class="document-section">
-                                    <h6 class="text-primary mb-3">
-                                        <i class="bi bi-paperclip"></i> Original Attachment
-                                    </h6>
-                                    {% if requirement.attachment %}
-                                        <div class="document-item p-3 border rounded mb-2">
-                                            <div class="d-flex align-items-center">
-                                                <i class="bi bi-file-earmark me-2 text-secondary"></i>
-                                                <div class="flex-grow-1">
-                                                    <strong>{{ requirement.attachment.name|slice:"15:" }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">Uploaded by {{ requirement.requested_by.get_full_name }}</small>
-                                                </div>
-                                                <a href="{{ requirement.attachment.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                                    <i class="bi bi-download"></i> View
-                                                </a>
-                                            </div>
-                                        </div>
-                                    {% else %}
-                                        <div class="text-muted">
-                                            <i class="bi bi-dash-circle"></i> No original attachment
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-
-                            <!-- Signed Documents -->
-                            <div class="col-md-4">
-                                <div class="document-section">
-                                    <h6 class="text-success mb-3">
-                                        <i class="bi bi-check-circle"></i> Signed Documents
-                                    </h6>
-                                    {% for doc in all_documents %}
-                                        {% if doc.is_signed %}
-                                            <div class="document-item p-3 border rounded mb-2">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-file-earmark-check me-2 text-success"></i>
-                                                    <div class="flex-grow-1">
-                                                        <strong>{{ doc.file_name }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">
-                                                            Level {{ doc.approval.approval_level }} - {{ doc.approval.get_approval_level_display }}
-                                                            <br>
-                                                            Uploaded by {{ doc.uploaded_by.get_full_name }} on {{ doc.uploaded_date|date:"M d, Y" }}
-                                                        </small>
-                                                    </div>
-                                                    <a href="{% url 'documents:download_document' doc.id %}" class="btn btn-sm btn-outline-success">
-                                                        <i class="bi bi-download"></i> Download
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                    {% empty %}
-                                        <div class="text-muted">
-                                            <i class="bi bi-dash-circle"></i> No signed documents yet
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-
-                            <!-- Additional Documents -->
-                            <div class="col-md-4">
-                                <div class="document-section">
-                                    <h6 class="text-warning mb-3">
-                                        <i class="bi bi-plus-circle"></i> Additional Documents
-                                    </h6>
-                                    {% for approval_item in requirement_approvals %}
-                                        {% if approval_item.additional_document %}
-                                            <div class="document-item p-3 border rounded mb-2">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-file-earmark-plus me-2 text-warning"></i>
-                                                    <div class="flex-grow-1">
-                                                        <strong>{{ approval_item.additional_document.name|slice:"15:" }}</strong>
-                                                        <br>
-                                                        <small class="text-muted">
-                                                            Level {{ approval_item.approval_level }} - {{ approval_item.get_approval_level_display }}
-                                                            <br>
-                                                            From {{ approval_item.approver.get_full_name }} on {{ approval_item.timestamp|date:"M d, Y" }}
-                                                        </small>
-                                                    </div>
-                                                    <a href="{{ approval_item.additional_document.url }}" class="btn btn-sm btn-outline-warning" target="_blank">
-                                                        <i class="bi bi-download"></i> View
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                    {% empty %}
-                                        <div class="text-muted">
-                                            <i class="bi bi-dash-circle"></i> No additional documents
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Approval Form -->
-            <div class="col-md-5">
-                <!-- Document Upload Status -->
+            <!-- Col 2: Signed Document + Your Decision -->
+            <div class="col-md-6">
+                <!-- Signed Document Section -->
                 {% if can_upload_document %}
                 <div class="card mb-3 border-info">
                     <div class="card-header bg-info text-white">
@@ -250,6 +140,8 @@
                     </div>
                 </div>
                 {% endif %}
+
+                <!-- Your Decision Form -->
                 <div class="card">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="bi bi-pen"></i> Your Decision</h5>
@@ -291,8 +183,7 @@
                             <hr>
 
                             <div class="mb-3">
-                                <label for="id_comments" class="form-label fw-bold">Comments <span
-                                        class="text-danger">*</span></label>
+                                <label for="id_comments" class="form-label fw-bold">Comments <span class="text-danger">*</span></label>
                                 {{ form.comments }}
                                 {% if form.comments.errors %}
                                 <small class="text-danger d-block">{{ form.comments.errors.0 }}</small>
@@ -322,9 +213,126 @@
                         </form>
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Approval Timeline -->
-                <div class="card mt-4">
+        <!-- Full Width: All Documents Section -->
+        <div class="row mt-4">
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-file-earmark-pdf"></i> All Documents for this Requirement</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Original Requirement Attachment -->
+                            <div class="col-md-4">
+                                <div class="document-section">
+                                    <h6 class="text-primary mb-3">
+                                        <i class="bi bi-paperclip"></i> Original Attachment
+                                    </h6>
+                                    {% if requirement.attachment %}
+                                        <div class="document-item p-3 border rounded mb-2">
+                                            <div class="d-flex flex-column gap-2">
+                                                <div class="d-flex gap-2 align-items-flex-start">
+                                                    <i class="bi bi-file-earmark me-2 text-secondary flex-shrink-0" style="margin-top: 0.25rem;"></i>
+                                                    <div class="flex-grow-1 min-width-0">
+                                                        <strong class="d-block text-truncate" title="{{ requirement.attachment.name|slice:"15:" }}">{{ requirement.attachment.name|slice:"15:" }}</strong>
+                                                        <small class="text-muted d-block">Uploaded by {{ requirement.requested_by.get_full_name }}</small>
+                                                    </div>
+                                                </div>
+                                                <a href="{{ requirement.attachment.url }}" class="btn btn-sm btn-outline-primary w-100" target="_blank">
+                                                    <i class="bi bi-download"></i> View
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-muted">
+                                            <i class="bi bi-dash-circle"></i> No original attachment
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Signed Documents -->
+                            <div class="col-md-4">
+                                <div class="document-section">
+                                    <h6 class="text-success mb-3">
+                                        <i class="bi bi-check-circle"></i> Signed Documents
+                                    </h6>
+                                    {% for doc in all_documents %}
+                                        {% if doc.is_signed %}
+                                            <div class="document-item p-3 border rounded mb-2">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="d-flex gap-2 align-items-flex-start">
+                                                        <i class="bi bi-file-earmark-check me-2 text-success flex-shrink-0" style="margin-top: 0.25rem;"></i>
+                                                        <div class="flex-grow-1 min-width-0">
+                                                            <strong class="d-block text-truncate" title="{{ doc.file_name }}">{{ doc.file_name }}</strong>
+                                                            <small class="text-muted d-block">
+                                                                Level {{ doc.approval.approval_level }} - {{ doc.approval.get_approval_level_display }}
+                                                                <br>
+                                                                Uploaded by {{ doc.uploaded_by.get_full_name }} on {{ doc.uploaded_date|date:"M d, Y" }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <a href="{% url 'documents:download_document' doc.id %}" class="btn btn-sm btn-outline-success w-100">
+                                                        <i class="bi bi-download"></i> Download
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% empty %}
+                                        <div class="text-muted">
+                                            <i class="bi bi-dash-circle"></i> No signed documents yet
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Additional Documents -->
+                            <div class="col-md-4">
+                                <div class="document-section">
+                                    <h6 class="text-warning mb-3">
+                                        <i class="bi bi-plus-circle"></i> Additional Documents
+                                    </h6>
+                                    {% for approval_item in requirement_approvals %}
+                                        {% if approval_item.additional_document %}
+                                            <div class="document-item p-3 border rounded mb-2">
+                                                <div class="d-flex flex-column gap-2">
+                                                    <div class="d-flex gap-2 align-items-flex-start">
+                                                        <i class="bi bi-file-earmark-plus me-2 text-warning flex-shrink-0" style="margin-top: 0.25rem;"></i>
+                                                        <div class="flex-grow-1 min-width-0">
+                                                            <strong class="d-block text-truncate" title="{{ approval_item.additional_document.name|slice:"15:" }}">{{ approval_item.additional_document.name|slice:"15:" }}</strong>
+                                                            <small class="text-muted d-block">
+                                                                Level {{ approval_item.approval_level }} - {{ approval_item.get_approval_level_display }}
+                                                                <br>
+                                                                From {{ approval_item.approver.get_full_name }} on {{ approval_item.timestamp|date:"M d, Y" }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                    <a href="{{ approval_item.additional_document.url }}" class="btn btn-sm btn-outline-warning w-100" target="_blank">
+                                                        <i class="bi bi-download"></i> View
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    {% empty %}
+                                        <div class="text-muted">
+                                            <i class="bi bi-dash-circle"></i> No additional documents
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Col 1: Approval Timeline -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
                     <div class="card-header bg-light">
                         <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Approval Flow</h6>
                     </div>
@@ -456,6 +464,28 @@
 
     .timeline-content strong {
         font-size: 0.95rem;
+    }
+
+    /* Document section fixes */
+    .min-width-0 {
+        min-width: 0;
+    }
+
+    .text-truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .col-md-4 {
+        overflow: hidden;
+    }
+
+    .document-item {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
     }
 </style>
 {% endblock %}

@@ -26,7 +26,7 @@ class ApprovalActionForm(forms.ModelForm):
         widgets = {
             'comments': forms.Textarea(attrs={
                 'class': 'form-control',
-                'rows': 5,
+                'rows': 3,
                 'placeholder': 'Enter your comments (required)',
                 'required': True,
             }),

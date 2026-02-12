@@ -213,6 +213,11 @@
                                 <i class="bi bi-check-circle"></i> Pending Approvals
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'requirements:list_requirements' %}">
+                                <i class="bi bi-list-check"></i> View Requirements
+                            </a>
+                        </li>
                         {% endif %}
 
                         {% if user.is_department_head %}
@@ -227,6 +232,11 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'users:reports' %}">
                                 <i class="bi bi-bar-chart"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'audit:list_audit' %}">
+                                <i class="bi bi-file-text"></i> Audit Logs
                             </a>
                         </li>
                         <li class="nav-item">

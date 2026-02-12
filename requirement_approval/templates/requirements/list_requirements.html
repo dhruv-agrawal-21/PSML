@@ -62,9 +62,6 @@
                     <th>Description</th>
                     <th>Priority</th>
                     <th>Status</th>
-                    <th>Cost</th>
-                    <th>Quantity</th>
-                    <th>Duration</th>
                     <th>Requested By</th>
                     <th>Date</th>
                     <th>Action</th>
@@ -92,9 +89,6 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td>{{ req.estimated_cost|floatformat:2|default:"-" }}</td>
-                    <td>{{ req.quantity|default:"-" }}</td>
-                    <td>{{ req.duration|default:"-" }}</td>
                     <td>{{ req.requested_by.get_full_name }}</td>
                     <td><small>{{ req.created_date|date:"M d, Y" }}</small></td>
                     <td>

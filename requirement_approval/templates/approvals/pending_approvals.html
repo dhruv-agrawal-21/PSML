@@ -24,7 +24,6 @@
                     <th>Description</th>
                     <th>Department</th>
                     <th>Priority</th>
-                    <th>Cost</th>
                     <th>Requested By</th>
                     <th>Requested Date</th>
                     <th>Action</th>
@@ -43,7 +42,6 @@
                             {{ approval.requirement.get_priority_display }}
                         </span>
                     </td>
-                    <td>{{ approval.requirement.estimated_cost|floatformat:2 }}</td>
                     <td>{{ approval.requirement.requested_by.get_full_name }}</td>
                     <td><small>{{ approval.requirement.created_date|date:"M d, Y" }}</small></td>
                     <td>

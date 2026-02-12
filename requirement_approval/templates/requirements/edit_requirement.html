@@ -95,54 +95,7 @@
                             </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.estimated_cost.id_for_label }}" class="form-label">
-                                Estimated Cost <span class="text-danger">*</span>
-                            </label>
-                            {{ form.estimated_cost }}
-                            {% if form.estimated_cost.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.estimated_cost.errors.0 }}
-                            </div>
-                            {% endif %}
                         </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="{{ form.quantity.id_for_label }}" class="form-label">
-                                Quantity
-                            </label>
-                            {{ form.quantity }}
-                            {% if form.quantity.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.quantity.errors.0 }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.duration.id_for_label }}" class="form-label">
-                                Duration
-                            </label>
-                            {{ form.duration }}
-                            {% if form.duration.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.duration.errors.0 }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.delivery_address.id_for_label }}" class="form-label">
-                            Delivery Address
-                        </label>
-                        {{ form.delivery_address }}
-                        {% if form.delivery_address.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.delivery_address.errors.0 }}
-                        </div>
-                        {% endif %}
                     </div>
 
                     <div class="mb-3">
@@ -159,18 +112,6 @@
                         {% if requirement.attachment %}
                         <div class="mt-2">
                             <small class="text-muted">Current file: <a href="{{ requirement.attachment.url }}" target="_blank">{{ requirement.attachment.name }}</a></small>
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.quotation_deadline.id_for_label }}" class="form-label">
-                            Quotation Deadline <span class="text-danger">*</span>
-                        </label>
-                        {{ form.quotation_deadline }}
-                        {% if form.quotation_deadline.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.quotation_deadline.errors.0 }}
                         </div>
                         {% endif %}
                     </div>

@@ -287,6 +287,11 @@ def approve_requirement_view(request, approval_id):
         'signed_document': signed_document,
         'all_documents': all_documents,
         'requirement_approvals': requirement_approvals,
+        # Previous approval (closest lower approval level) to show prior comments
+        'previous_approval': Approval.objects.filter(
+            requirement=requirement,
+            approval_level__lt=approval.approval_level
+        ).order_by('-approval_level', '-timestamp').first(),
         'can_upload_document': not signed_document,
     }
     

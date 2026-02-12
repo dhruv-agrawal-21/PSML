@@ -97,9 +97,9 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <i class="bi bi-bar-chart" style="font-size: 2rem; color: #667eea;"></i>
-                    <h5 class="card-title mt-3">Department Stats</h5>
-                    <a href="{% url 'users:department_stats' %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-list-check" style="font-size: 2rem; color: #667eea;"></i>
+                    <h5 class="card-title mt-3">Department Requirements</h5>
+                    <a href="{% url 'requirements:list_requirements' %}" class="btn btn-primary btn-sm">
                         <i class="bi bi-arrow-right"></i> View
                     </a>
                 </div>
@@ -145,6 +145,18 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
+                    <i class="bi bi-file-earmark" style="font-size: 2rem; color: #667eea;"></i>
+                    <h5 class="card-title mt-3">All Requirements</h5>
+                    <a href="{% url 'requirements:list_requirements' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-right"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
                     <i class="bi bi-bar-chart" style="font-size: 2rem; color: #667eea;"></i>
                     <h5 class="card-title mt-3">Reports</h5>
                     <a href="{% url 'users:reports' %}" class="btn btn-primary btn-sm">
@@ -171,9 +183,11 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <i class="bi bi-cash-coin" style="font-size: 2rem; color: #28a745;"></i>
-                    <h5 class="card-title mt-3">Total Budget</h5>
-                    <p class="card-text">Σ {{ total_budget|floatformat:2|default:"0.00" }}</p>
+                    <i class="bi bi-file-earmark" style="font-size: 2rem; color: #667eea;"></i>
+                    <h5 class="card-title mt-3">All Requirements</h5>
+                    <a href="{% url 'requirements:list_requirements' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-right"></i> View
+                    </a>
                 </div>
             </div>
         </div>
@@ -229,9 +243,11 @@
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <i class="bi bi-cash-coin" style="font-size: 2rem; color: #28a745;"></i>
-                    <h5 class="card-title mt-3">Total Investments</h5>
-                    <p class="card-text">Σ {{ total_investments|floatformat:2|default:"0.00" }}</p>
+                    <i class="bi bi-file-earmark\" style="font-size: 2rem; color: #667eea;\"></i>
+                    <h5 class="card-title mt-3">All Requirements</h5>
+                    <a href="{% url 'requirements:list_requirements' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-right"></i> View
+                    </a>
                 </div>
             </div>
         </div>
